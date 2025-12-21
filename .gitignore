@@ -1,0 +1,43 @@
+# Compiled Object files
+*.o
+*.obj
+*.so
+*.dll
+*.dylib
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+a.out
+
+# Build directories
+build/
+bin/
+obj/
+Debug/
+Release/
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Test artifacts
+tests/test_results/
+*.log
+
+# Backup files
+*.bak
+*.tmp
