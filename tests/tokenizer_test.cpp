@@ -4,21 +4,27 @@
 using namespace ascijson;
 using namespace ascijson::test;
 
-void TestBasicCounting() {
-  const char* json = "{\"a\": 1, \"b\": 2, \"a\": 3}";
-  Assert("Count 'a' in flat object", CountFields(json, "a") == 2);
-  Assert("Count 'b' in flat object", CountFields(json, "b") == 1);
-  Assert("Count non-existent", CountFields(json, "z") == 0);
-}
+int main() {
+  std::cout << "--- ascijson Tokenizer Stress Tests ---\n" << std::endl;
 
-void TestNestedObjects() {
-  // This tests if SkipValue correctly ignores 'a' inside the nested object 'b'
-  const char* json = "{\"a\": 1, \"b\": {\"a\": 2}, \"c\": 3}";
-  Assert("Count top-level 'a' only", CountFields(json, "a") == 1);
-}
+  // 1. Safety & Null Checks
+  Assert("Handle null JSON pointer", CountFields(nullptr, "key") == 0);
+  Assert("Handle null key pointer",  CountFields("{}", nullptr) == 0);
+  Assert("Handle empty string",      CountFields("", "key") == 0);
 
-void TestComplexNesting() {
-  const char* json = R"({
+  // 2. Multi-occurrence & Non-existent
+  const char* flat = "{\"a\": 1, \"b\": 2, \"a\": 3}";
+  Assert("Count 'a' (multiple)", CountFields(flat, "a") == 2);
+  Assert("Count 'z' (missing)",  CountFields(flat, "z") == 0);
+
+  // 3. Nested Object Isolation
+  // Should ignore the 'a' inside the nested object 'b'
+  const char* nested = "{\"a\": 1, \"b\": {\"a\": 2}, \"c\": 3}";
+  Assert("Ignore nested object keys", CountFields(nested, "a") == 1);
+
+  // 4. Complex Array/Object Nesting
+  // Should ignore 'id' inside the metadata object and the tags array
+  const char* complex = R"({
     "id": 1,
     "metadata": {
       "tags": ["id", "test"],
@@ -26,15 +32,13 @@ void TestComplexNesting() {
     },
     "id": 2
   })";
-  Assert("Ignore 'id' inside nested objects/arrays", CountFields(json, "id") == 2);
-}
+  Assert("Ignore keys in nested arrays/objects",
+         CountFields(complex, "id") == 2);
 
-int main() {
-  std::cout << "Running Tokenizer Tests...\n" << std::endl;
-
-  TestBasicCounting();
-  TestNestedObjects();
-  TestComplexNesting();
+  // 5. Prefix Protection
+  // Ensures 'user' doesn't match 'username'
+  const char* prefix = "{\"username\": \"alice\", \"user\": \"bob\"}";
+  Assert("Prevent prefix matching", CountFields(prefix, "user") == 1);
 
   Summary();
   return (g_fail_count > 0) ? 1 : 0;
