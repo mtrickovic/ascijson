@@ -1,5 +1,6 @@
 #include "test_framework.hpp"
 #include "../include/json.hpp"
+#include <cstring>
 
 using namespace ascijson;
 using namespace ascijson::test;
@@ -7,39 +8,153 @@ using namespace ascijson::test;
 int main() {
   std::cout << "--- ascijson Tokenizer Stress Tests ---\n" << std::endl;
 
-  // 1. Safety & Null Checks
-  Assert("Handle null JSON pointer", CountFields(nullptr, "key") == 0);
-  Assert("Handle null key pointer",  CountFields("{}", nullptr) == 0);
-  Assert("Handle empty string",      CountFields("", "key") == 0);
+  // -------------------------------------------------------
+  // CountFields
+  // -------------------------------------------------------
+  std::cout << "-- CountFields --\n";
 
-  // 2. Multi-occurrence & Non-existent
+  // Null / empty safety
+  Assert("CF: null json",          CountFields(nullptr, "key") == 0);
+  Assert("CF: null key",           CountFields("{}", nullptr) == 0);
+  Assert("CF: empty string",       CountFields("", "key") == 0);
+  Assert("CF: empty object",       CountFields("{}", "a") == 0);
+
+  // Basic counting
   const char* flat = "{\"a\": 1, \"b\": 2, \"a\": 3}";
-  Assert("Count 'a' (multiple)", CountFields(flat, "a") == 2);
-  Assert("Count 'z' (missing)",  CountFields(flat, "z") == 0);
+  Assert("CF: multiple matches",   CountFields(flat, "a") == 2);
+  Assert("CF: single match",       CountFields(flat, "b") == 1);
+  Assert("CF: missing key",        CountFields(flat, "z") == 0);
 
-  // 3. Nested Object Isolation
-  // Should ignore the 'a' inside the nested object 'b'
+  // Prefix protection — 'user' must not match 'username'
+  const char* prefix = "{\"username\": \"alice\", \"user\": \"bob\"}";
+  Assert("CF: prefix isolation",   CountFields(prefix, "user") == 1);
+
+  // Nested isolation — should NOT descend into child objects
   const char* nested = "{\"a\": 1, \"b\": {\"a\": 2}, \"c\": 3}";
-  Assert("Ignore nested object keys", CountFields(nested, "a") == 1);
+  Assert("CF: ignore nested keys", CountFields(nested, "a") == 1);
 
-  // 4. Complex Array/Object Nesting
-  // Should ignore 'id' inside the metadata object and the tags array
+  // Nested arrays/objects
   const char* complex = R"({
     "id": 1,
-    "metadata": {
-      "tags": ["id", "test"],
-      "id": 99
-    },
+    "metadata": { "tags": ["id", "test"], "id": 99 },
     "id": 2
   })";
-  Assert("Ignore keys in nested arrays/objects",
-         CountFields(complex, "id") == 2);
+  Assert("CF: ignore array/object contents", CountFields(complex, "id") == 2);
 
-  // 5. Prefix Protection
-  // Ensures 'user' doesn't match 'username'
-  const char* prefix = "{\"username\": \"alice\", \"user\": \"bob\"}";
-  Assert("Prevent prefix matching", CountFields(prefix, "user") == 1);
+  // Key whose value is an array
+  const char* with_array = "{\"items\": [1,2,3], \"items\": [4]}";
+  Assert("CF: key with array value", CountFields(with_array, "items") == 2);
 
+  // -------------------------------------------------------
+  // GetNthString
+  // -------------------------------------------------------
+  std::cout << "\n-- GetNthString --\n";
+
+  const char* strings = R"({"x": "hello", "y": "world", "x": "again"})";
+  char buf[64] = {};
+
+  Assert("GNS: null json",
+         !GetNthString(nullptr,"x", 0, buf, sizeof(buf)));
+  Assert("GNS: null key",
+         !GetNthString(strings, nullptr, 0, buf, sizeof(buf)));
+  Assert("GNS: null buffer",
+         !GetNthString(strings, "x", 0, nullptr, sizeof(buf)));
+  Assert("GNS: zero buf size",  !GetNthString(strings, "x", 0, buf, 0));
+  
+  memset(buf, 0, sizeof(buf));
+  Assert("GNS: first match",
+         GetNthString(strings, "x", 0, buf, sizeof(buf)));
+  Assert("GNS: first value",    strcmp(buf, "hello") == 0);
+
+  memset(buf, 0, sizeof(buf));
+  Assert("GNS: second match",
+         GetNthString(strings, "x", 1, buf, sizeof(buf)));
+  Assert("GNS: second value",   strcmp(buf, "again") == 0);
+
+  memset(buf, 0, sizeof(buf));
+  Assert("GNS: only match",     GetNthString(strings, "y", 0, buf, sizeof(buf)));
+  Assert("GNS: only value",     strcmp(buf, "world") == 0);
+
+  Assert("GNS: out of range",
+         !GetNthString(strings, "x", 99, buf, sizeof(buf)));
+  Assert("GNS: missing key",
+         !GetNthString(strings, "z", 0, buf, sizeof(buf)));
+
+  // Non-string value should return false
+  const char* numval = "{\"n\": 42}";
+  Assert("GNS: non-string val",
+         !GetNthString(numval, "n", 0, buf, sizeof(buf)));
+
+  // Escaped quote inside string value
+  const char* escaped = "{\"msg\": \"say \\\"hi\\\"\"}";
+  memset(buf, 0, sizeof(buf));
+  Assert("GNS: escaped quotes",
+         GetNthString(escaped, "msg", 0, buf, sizeof(buf)));
+
+  // -------------------------------------------------------
+  // FindValue
+  // -------------------------------------------------------
+  std::cout << "\n-- FindValue --\n";
+
+  const char* obj = R"({"name": "alice", "age": 30, "scores": [1,2,3]})";
+  Assert("FV: null json",     FindValue(nullptr, "name") == nullptr);
+  Assert("FV: null key",      FindValue(obj, nullptr) == nullptr);
+  Assert("FV: missing key",   FindValue(obj, "missing") == nullptr);
+  Assert("FV: string value",  FindValue(obj, "name") != nullptr);
+  Assert("FV: number value",  FindValue(obj, "age") != nullptr);
+  Assert("FV: array value",   FindValue(obj, "scores") != nullptr);
+
+  // Verify the pointer actually points at the value
+  const char* name_val = FindValue(obj, "name");
+  Assert("FV: points at value", name_val && *name_val == '"');
+
+  const char* arr_val = FindValue(obj, "scores");
+  Assert("FV: points at array", arr_val && *arr_val == '[');
+
+  // -------------------------------------------------------
+  // CountArrayElements
+  // -------------------------------------------------------
+  std::cout << "\n-- CountArrayElements --\n";
+
+  Assert("CAE: null",          CountArrayElements(nullptr) == 0);
+  Assert("CAE: not an array",  CountArrayElements("{\"a\":1}") == 0);
+  Assert("CAE: empty array",   CountArrayElements("[]") == 0);
+  Assert("CAE: one element",   CountArrayElements("[1]") == 1);
+  Assert("CAE: three numbers", CountArrayElements("[1, 2, 3]") == 3);
+  Assert("CAE: three strings", CountArrayElements("[\"a\",\"b\",\"c\"]") == 3);
+  Assert("CAE: nested objects",
+         CountArrayElements("[{\"x\":1},{\"x\":2}]") == 2);
+
+  // Array inside real JSON (via FindValue)
+  const char* doc = R"({"items": ["one", "two", "three"]})";
+  const char* items = FindValue(doc, "items");
+  Assert("CAE: via FindValue", items && CountArrayElements(items) == 3);
+
+  // -------------------------------------------------------
+  // GetNthElement
+  // -------------------------------------------------------
+  std::cout << "\n-- GetNthElement --\n";
+
+  const char* arr = "[\"alpha\", \"beta\", \"gamma\"]";
+  Assert("GNE: null json",     GetNthElement(nullptr, 0) == nullptr);
+  Assert("GNE: not an array",  GetNthElement("{}", 0) == nullptr);
+  Assert("GNE: out of range",  GetNthElement(arr, 99) == nullptr);
+  Assert("GNE: first element", GetNthElement(arr, 0) != nullptr);
+  Assert("GNE: third element", GetNthElement(arr, 2) != nullptr);
+
+  // Verify pointer lands on the right character
+  const char* el0 = GetNthElement(arr, 0);
+  Assert("GNE: el0 is string", el0 && *el0 == '"');
+
+  // Round-trip: GetNthElement + GetNthString on an object array
+  const char* objarr = R"([{"k":"one"},{"k":"two"},{"k":"three"}])";
+  const char* el2 = GetNthElement(objarr, 2);
+  memset(buf, 0, sizeof(buf));
+  Assert("GNE: roundtrip get",
+         el2 && GetNthString(el2, "k", 0, buf, sizeof(buf)));
+  Assert("GNE: roundtrip val", strcmp(buf, "three") == 0);
+
+  // -------------------------------------------------------
   Summary();
   return (g_fail_count > 0) ? 1 : 0;
 }

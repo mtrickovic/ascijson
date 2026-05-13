@@ -1,0 +1,254 @@
+{
+  "quotes": [
+    {
+      "text": "Talk is cheap. Show me the code.",
+      "author": "Linus Torvalds",
+      "category": "programming"
+    },
+    {
+      "text": "The best programs are written so that computing machines can perform them quickly and so that human beings can understand them clearly.",
+      "author": "Donald Knuth",
+      "category": "programming"
+    },
+    {
+      "text": "UNIX is simple. It just takes a genius to understand its simplicity.",
+      "author": "Dennis Ritchie",
+      "category": "unix"
+    },
+    {
+      "text": "One of my most productive days was throwing away 1000 lines of code.",
+      "author": "Ken Thompson",
+      "category": "programming"
+    },
+    {
+      "text": "Controlling complexity is the essence of computer programming.",
+      "author": "Brian Kernighan",
+      "category": "programming"
+    },
+    {
+      "text": "The most effective debugging tool is still careful thought, coupled with judiciously placed print statements.",
+      "author": "Brian Kernighan",
+      "category": "debugging"
+    },
+    {
+      "text": "Premature optimization is the root of all evil.",
+      "author": "Donald Knuth",
+      "category": "optimization"
+    },
+    {
+      "text": "Any fool can write code that a computer can understand. Good programmers write code that humans can understand.",
+      "author": "Martin Fowler",
+      "category": "programming"
+    },
+    {
+      "text": "First, solve the problem. Then, write the code.",
+      "author": "John Johnson",
+      "category": "problem-solving"
+    },
+    {
+      "text": "The function of good software is to make the complex appear to be simple.",
+      "author": "Grady Booch",
+      "category": "design"
+    },
+    {
+      "text": "Simplicity is prerequisite for reliability.",
+      "author": "Edsger Dijkstra",
+      "category": "design"
+    },
+    {
+      "text": "Make it work, make it right, make it fast.",
+      "author": "Kent Beck",
+      "category": "development"
+    },
+    {
+      "text": "The best way to predict the future is to invent it.",
+      "author": "Alan Kay",
+      "category": "innovation"
+    },
+    {
+      "text": "Programs must be written for people to read, and only incidentally for machines to execute.",
+      "author": "Harold Abelson",
+      "category": "programming"
+    },
+    {
+      "text": "The only way to learn a new programming language is by writing programs in it.",
+      "author": "Dennis Ritchie",
+      "category": "learning"
+    },
+    {
+      "text": "Perfection is achieved not when there is nothing more to add, but rather when there is nothing more to take away.",
+      "author": "Antoine de Saint-Exupéry",
+      "category": "design"
+    },
+    {
+      "text": "Code is like humor. When you have to explain it, it's bad.",
+      "author": "Cory House",
+      "category": "programming"
+    },
+    {
+      "text": "Walking on water and developing software from a specification are easy if both are frozen.",
+      "author": "Edward V. Berard",
+      "category": "software-engineering"
+    },
+    {
+      "text": "Before software can be reusable it first has to be usable.",
+      "author": "Ralph Johnson",
+      "category": "software-engineering"
+    },
+    {
+      "text": "It's not a bug – it's an undocumented feature.",
+      "author": "Anonymous",
+      "category": "humor"
+    },
+    {
+      "text": "In theory, theory and practice are the same. In practice, they're not.",
+      "author": "Yogi Berra",
+      "category": "wisdom"
+    },
+    {
+      "text": "Good code is its own best documentation.",
+      "author": "Steve McConnell",
+      "category": "documentation"
+    },
+    {
+      "text": "Every great developer you know got there by solving problems they were unqualified to solve until they actually did it.",
+      "author": "Patrick McKenzie",
+      "category": "motivation"
+    },
+    {
+      "text": "The best error message is the one that never shows up.",
+      "author": "Thomas Fuchs",
+      "category": "design"
+    },
+    {
+      "text": "Weeks of coding can save you hours of planning.",
+      "author": "Anonymous",
+      "category": "planning"
+    },
+    {
+      "text": "Debugging is twice as hard as writing the code in the first place.",
+      "author": "Brian Kernighan",
+      "category": "debugging"
+    },
+    {
+      "text": "There are two ways to write error-free programs; only the third one works.",
+      "author": "Alan Perlis",
+      "category": "humor"
+    },
+    {
+      "text": "Measuring programming progress by lines of code is like measuring aircraft building progress by weight.",
+      "author": "Bill Gates",
+      "category": "metrics"
+    },
+    {
+      "text": "Always code as if the guy who ends up maintaining your code will be a violent psychopath who knows where you live.",
+      "author": "John Woods",
+      "category": "best-practices"
+    },
+    {
+      "text": "Programming isn't about what you know; it's about what you can figure out.",
+      "author": "Chris Pine",
+      "category": "learning"
+    },
+    {
+      "text": "The most damaging phrase in the language is: 'We've always done it this way.'",
+      "author": "Grace Hopper",
+      "category": "innovation"
+    },
+    {
+      "text": "Computer science is no more about computers than astronomy is about telescopes.",
+      "author": "Edsger Dijkstra",
+      "category": "computer-science"
+    },
+    {
+      "text": "If debugging is the process of removing bugs, then programming must be the process of putting them in.",
+      "author": "Edsger Dijkstra",
+      "category": "humor"
+    },
+    {
+      "text": "To iterate is human, to recurse divine.",
+      "author": "L. Peter Deutsch",
+      "category": "algorithms"
+    },
+    {
+      "text": "You might not think that programmers are artists, but programming is an extremely creative profession. It's logic-based creativity.",
+      "author": "John Romero",
+      "category": "creativity"
+    },
+    {
+      "text": "Sometimes it pays to stay in bed on Monday, rather than spending the rest of the week debugging Monday's code.",
+      "author": "Dan Salomon",
+      "category": "humor"
+    },
+    {
+      "text": "The computer was born to solve problems that did not exist before.",
+      "author": "Bill Gates",
+      "category": "technology"
+    },
+    {
+      "text": "A language that doesn't affect the way you think about programming is not worth knowing.",
+      "author": "Alan Perlis",
+      "category": "programming-languages"
+    },
+    {
+      "text": "The question of whether a computer can think is no more interesting than the question of whether a submarine can swim.",
+      "author": "Edsger Dijkstra",
+      "category": "ai"
+    },
+    {
+      "text": "Write code that is easy to delete, not easy to extend.",
+      "author": "Tef",
+      "category": "design"
+    },
+    {
+      "text": "Experience is the name everyone gives to their mistakes.",
+      "author": "Oscar Wilde",
+      "category": "wisdom"
+    },
+    {
+      "text": "The cheapest, fastest, and most reliable components are those that aren't there.",
+      "author": "Gordon Bell",
+      "category": "design"
+    },
+    {
+      "text": "Deleted code is debugged code.",
+      "author": "Jeff Sickel",
+      "category": "simplicity"
+    },
+    {
+      "text": "There are only two hard things in Computer Science: cache invalidation and naming things.",
+      "author": "Phil Karlton",
+      "category": "humor"
+    },
+    {
+      "text": "It's harder to read code than to write it.",
+      "author": "Joel Spolsky",
+      "category": "programming"
+    },
+    {
+      "text": "Hofstadter's Law: It always takes longer than you expect, even when you take into account Hofstadter's Law.",
+      "author": "Douglas Hofstadter",
+      "category": "project-management"
+    },
+    {
+      "text": "Programs are meant to be read by humans and only incidentally for computers to execute.",
+      "author": "Donald Knuth",
+      "category": "programming"
+    },
+    {
+      "text": "The bearing of a child takes nine months, no matter how many women are assigned.",
+      "author": "Fred Brooks",
+      "category": "project-management"
+    },
+    {
+      "text": "Bad programmers worry about the code. Good programmers worry about data structures and their relationships.",
+      "author": "Linus Torvalds",
+      "category": "data-structures"
+    },
+    {
+      "text": "The real problem is that programmers have spent far too much time worrying about efficiency in the wrong places and at the wrong times.",
+      "author": "Donald Knuth",
+      "category": "optimization"
+    }
+  ]
+}

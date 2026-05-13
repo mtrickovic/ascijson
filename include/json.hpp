@@ -21,6 +21,15 @@ namespace ascijson {
   bool GetNthString(const char* json, const char* field_name, unsigned int n,
                     char* out_buffer, size_t buffer_size);
 
+  // Counts elements in a JSON array (pointer to '[').
+  unsigned int CountArrayElements(const char* array_json);
+
+  // Returns pointer to the Nth element inside a json array.
+  const char* GetNthElement(const char* array_json, unsigned int n);
+
+  // Returns pointer to the value of a named key in a top-level JSON object.
+  const char* FindValue(const char* json, const char* key);
+
 }  // namespace ascijson
 
 #endif  // ASCIJSON_INCLUDE_JSON_HPP_
