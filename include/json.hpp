@@ -13,13 +13,14 @@ namespace ascijson {
     kMemoryError
   };
 
-  // Core API for the foundational phase
+  // Returns the count of a specific field at the current level.
   unsigned int CountFields(const char* json, const char* field_name);
 
-  char* GetNthQuote(const char* json,
-                    unsigned int quote_index,
-                    const char* field_name);
+  // Extracts the string value of the Nth occurrence of a field.
+  // Returns true if found and copied, false otherwise.
+  bool GetNthString(const char* json, const char* field_name, unsigned int n,
+                    char* out_buffer, size_t buffer_size);
 
-} // namespace ascijson
+}  // namespace ascijson
 
-#endif  // ASCIJSON_INCLUDE_JSON_H_
+#endif  // ASCIJSON_INCLUDE_JSON_HPP_

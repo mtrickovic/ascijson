@@ -3,7 +3,7 @@
 namespace ascijson {
 
   namespace {
-    
+
     // Internal helper for string comparison (Zero-STL)
     bool StringsAreEqual(const char* s1, const char* s2, size_t n) {
       for (size_t i = 0; i < n; ++i) {
@@ -53,15 +53,15 @@ namespace ascijson {
             cursor = SkipValue(cursor); // Reuse logic to skip strings
             continue;
           }
-          if (*cursor == open) depth++;
+          if (*cursor == open)  depth++;
           if (*cursor == close) depth--;
           cursor++;
         }
       } else {
         // Skip primitive (number, booleans, null)
         // Scan until comma, closing brace, or whitespace
-        while (*cursor != '\0' && *cursor != ',' && *cursor != '}' &&
-               *cursor != ']' && *cursor != ' ' && *cursor != '\n' &&
+        while (*cursor != '\0' && *cursor != ',' && *cursor != '}'  &&
+               *cursor != ']'  && *cursor != ' ' && *cursor != '\n' &&
                *cursor != '\r' && *cursor != '\t') {
           cursor++;
         }
