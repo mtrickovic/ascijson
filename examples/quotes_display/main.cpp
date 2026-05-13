@@ -5,7 +5,12 @@
 #include "../../include/json.hpp"
 
 int main() {
-  FILE* f = fopen("quotes.json", "rb");
+  FILE* f = nullptr;
+#ifdef _MSC_VER
+  fopen_s(&f, "quotes.json", "rb");
+#else
+  f = fopen("quotes.json", "rb");
+#endif
   if (!f) return 1;
 
   fseek(f, 0, SEEK_END);
@@ -29,7 +34,7 @@ int main() {
   unsigned int total = ascijson::CountArrayElements(quotes_array);
   if (total == 0) { delete[] buf; return 1; }
 
-  std::srand(std::time(nullptr));
+  std::srand(static_cast<unsigned int>(std::time(nullptr)));
   unsigned int random_idx = std::rand() % total;
 
   // Step 3: get a pointer to the Nth { "text":..., "author":... } object
