@@ -5,30 +5,25 @@
 
 namespace ascijson {
 
-  // Error codes for the linear-scan process
-  enum class Error {
-    kNone = 0,
-    kInvalidJson,
-    kFieldNotFound,
-    kMemoryError
-  };
+// Error codes for the linear-scan process
+enum class Error { kNone = 0, kInvalidJson, kFieldNotFound, kMemoryError };
 
-  // Returns the count of a specific field at the current level.
-  unsigned int CountFields(const char* json, const char* field_name);
+// Returns the count of a specific field at the current level.
+unsigned int CountFields(const char* json, const char* field_name);
 
-  // Extracts the string value of the Nth occurrence of a field.
-  // Returns true if found and copied, false otherwise.
-  bool GetNthString(const char* json, const char* field_name, unsigned int n,
-                    char* out_buffer, size_t buffer_size);
+// Extracts the string value of the Nth occurrence of a field.
+// Returns true if found and copied, false otherwise.
+bool GetNthString(const char* json, const char* field_name, unsigned int n,
+                  char* out_buffer, size_t buffer_size);
 
-  // Counts elements in a JSON array (pointer to '[').
-  unsigned int CountArrayElements(const char* array_json);
+// Counts elements in a JSON array (pointer to '[').
+unsigned int CountArrayElements(const char* array_json);
 
-  // Returns pointer to the Nth element inside a json array.
-  const char* GetNthElement(const char* array_json, unsigned int n);
+// Returns pointer to the Nth element inside a json array.
+const char* GetNthElement(const char* array_json, unsigned int n);
 
-  // Returns pointer to the value of a named key in a top-level JSON object.
-  const char* FindValue(const char* json, const char* key);
+// Returns pointer to the value of a named key in a top-level JSON object.
+const char* FindValue(const char* json, const char* key);
 
 }  // namespace ascijson
 
