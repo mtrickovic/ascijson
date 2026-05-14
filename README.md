@@ -45,39 +45,99 @@ This project is designed as both:
 
 ## Core API (WIP)
 
-```c
-unsigned int get_rand_num(unsigned int max_num);
+```cpp
+namespace ascijson {
+  // Returns the count of a specific field at the current level.
+  unsigned int CountFields(const char* json, const char* field_name);
 
-unsigned int json_count_fields(const char* json, const char* field_name);
+  // Extracts the string value of the Nth occurrence of a field.
+  bool GetNthString(const char* json, const char* field_name, unsigned int n,
+                    char* out_buffer, size_t buffer_size);
 
-char* json_get_nth_quote(
-    const char* json,
-    unsigned int quote_index,
-    const char* field_name
-);
+  // Counts elements in a JSON array.
+  unsigned int CountArrayElements(const char* array_json);
+
+  // Returns pointer to the Nth element inside a json array.
+  const char* GetNthElement(const char* array_json, unsigned int n);
+}
 ```
 
 ---
 
-### Build (Simple Example)
+### Standard Build (Recommended)
 
-To build the example application using a C++17 compatible compiler (GCC 7+ or Clang 5+):
+This method automatically handles the library compilation and copies
+`quotes.json` to your build directory so the demo works out of the box.
 
+**Linux / macOS**
 ```bash
-g++ -std=c++17 -Wall -Wextra -g main.cpp src/json.cpp src/tokenizer.cpp -I./include -o ascijson_app
+# Create a build directory
+mkdir build && cd build
+
+# Configure and build
+cmake ..
+cmake --build .
+
+# Run the random quote generator
+./quotes_display
 ```
+
+**Windows (Visual Studio)**
+```bat
+mkdir build && cd build
+cmake ..
+cmake --build . --config Release
+cd Release && quotes_display.exe
+```
+
+**Windows (MinGW / MSYS2)**
+```bash
+mkdir build && cd build
+cmake .. -G "MinGW Makefiles"
+cmake --build .
+.\quotes_display.exe
+```
+
+### Manual Compilation (Quick Check)
+
+To build the example application using a C++17 compatible compiler (GCC 7+ or
+MSVC):
+
+**Linux / macOS**
+```bash
+g++ -std=c++17 -Wall -Wextra -I./include \
+    examples/quotes_display/main.cpp src/tokenizer.cpp \
+    -o quotes_display
+```
+
+**Windows (MSVC - Developer Command Prompt)**
+```bat
+cl /std:c++17 /EHsc /I./include ^
+   examples\quotes_display\main.cpp src\tokenizer.cpp ^
+   /Fe:quotes_display.exe
+```
+
+**Windows (MinGW)**
+```bash
+g++ -std=c++17 -Wall -Wextra -I./include \
+    examples/quotes_display/main.cpp src/tokenizer.cpp \
+    -o quotes_display.exe
+```
+
+> **Note:** Ensure `quotes.json` is in the same directory as the binary,
+> or use the CMake build which copies it automatically.
 ---
 
 ### Example Usage
 
 ```c
 const char* json = "{ \"text\": \"hello\", \"text\": \"world\" }";
+unsigned int count = ascijson::CountFields(json, "text");
 
-unsigned int count = json_count_fields(json, "text");
-
-char* second = json_get_nth_quote(json, 1, "text");
-printf("%s\n", second);
-free(second);
+char buf[64];
+if (ascijson::GetNthString(json, "text", 1, buf, sizeof(buf))) {
+  printf("%s\n", buf);
+}
 ```
 
 ---
