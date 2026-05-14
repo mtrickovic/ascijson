@@ -45,8 +45,9 @@ target_link_libraries(quotes_display PRIVATE ascijson)
 
 # Copy quotes.json next to the executable after build
 add_custom_command(TARGET quotes_display POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ${CMAKE_SOURCE_DIR}/examples/quotes_display/quotes.json
-      $<TARGET_FILE_DIR:quotes_display>/quotes.json
-    COMMENT "Copying quotes.json to build dir"
+  COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_SOURCE_DIR}/examples/quotes_display/quotes.json
+    $<TARGET_FILE_DIR:quotes_display>/quotes.json
+  COMMENT "Copying quotes.json to build dir"
 )
+
