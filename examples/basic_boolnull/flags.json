@@ -1,0 +1,10 @@
+{
+  "service_name": "AsciJSON Feature Flags",
+  "schema_version": 2,
+  "dark_mode_enabled": true,
+  "maintenance_mode": false,
+  "beta_feature_enabled": true,
+  "deprecated_endpoint": null,
+  "experimental_parser": false,
+  "override_config": null
+}

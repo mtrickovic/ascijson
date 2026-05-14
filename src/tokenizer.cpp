@@ -89,6 +89,21 @@ void CopyString(const char* source, char* dest, size_t dest_size) {
   dest[i] = '\0';
 }
 
+// Checks whether the cursor points at a specific literal token
+// (e.g. "true", "false", "null") as a complete value - not a prefix.
+bool IsLiteral(const char* cursor, const char* literal, size_t len) {
+  if (!cursor) return false;
+  for (size_t i = 0; i < len; ++i) {
+    if (cursor[i] != literal[i]) return false;
+  }
+  // Guard against prefix matches: next char must be a value terminator.
+  char next = cursor[len];
+  return (next == ','  || next == '}' || next == ']' ||
+          next == ' '  || next == '\n' || next == '\r' ||
+          next == '\t' || next == '\0');
+}
+
+
 }  // namespace
 
 unsigned int CountArrayElements(const char* json) {
@@ -333,5 +348,24 @@ bool GetNthDouble(const char* json, const char* field_name, unsigned int index,
   }
   return false;
 }
+
+bool IsTrue(const char* json, const char* field_name) {
+  const char* val = FindValue(json, field_name);
+  if (!val) return false;
+  return IsLiteral(val, "true", 4);
+}
+
+bool IsFalse(const char* json, const char* field_name) {
+  const char* val = FindValue(json, field_name);
+  if (!val) return false;
+  return IsLiteral(val, "false", 5);
+}
+
+bool IsNull(const char* json, const char* field_name) {
+  const char* val = FindValue(json, field_name);
+  if (!val) return false;
+  return IsLiteral(val, "null", 4);
+}
+
 
 }  // namespace ascijson

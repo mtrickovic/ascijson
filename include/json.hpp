@@ -33,6 +33,18 @@ bool GetNthInt(const char* json, const char* field_name, unsigned int index,
 bool GetNthDouble(const char* json, const char* field_name, unsigned int index,
                   double* out_value);
 
+// Returns true if the named field's value is the literal `true`.
+// Returns false if the field is absent, not a boolean, or is `false`.
+bool IsTrue(const char* json, const char* field_name);
+
+// Returns true if the named field's value is the literal `false`.
+// Returns false if the field is absent, not a boolean, or is `true`.
+bool IsFalse(const char* json, const char* field_name);
+
+// Returns true if the named field's value is the literal `null`.
+// Returns false if the field is absent or holds any other value.
+bool IsNull(const char* json, const char* field_name);
+
 }  // namespace ascijson
 
 #endif  // ASCIJSON_INCLUDE_JSON_HPP_

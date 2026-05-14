@@ -44,6 +44,8 @@ add_executable(quotes_display examples/quotes_display/main.cpp)
 target_link_libraries(quotes_display PRIVATE ascijson)
 add_executable(basic_numerics examples/basic_numerics/main.cpp)
 target_link_libraries(basic_numerics PRIVATE ascijson)
+add_executable(basic_boolnull examples/basic_boolnull/main.cpp)
+target_link_libraries(basic_boolnull PRIVATE ascijson)
 
 # Copy quotes.json next to the executable after build
 add_custom_command(TARGET quotes_display POST_BUILD
@@ -59,4 +61,12 @@ add_custom_command(TARGET basic_numerics POST_BUILD
     ${CMAKE_SOURCE_DIR}/examples/basic_numerics/portfolio.json
     $<TARGET_FILE_DIR:basic_numerics>/portfolio.json
   COMMENT "Copying portfolio.json to build dir"
+)
+
+# Copy flags.json next to the executable after build
+add_custom_command(TARGET basic_boolnull POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy
+    ${CMAKE_SOURCE_DIR}/examples/basic_boolnull/flags.json
+    $<TARGET_FILE_DIR:basic_numerics>/flags.json
+  COMMENT "Copying flags.json to build dir"
 )
