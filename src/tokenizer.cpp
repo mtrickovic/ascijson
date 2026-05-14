@@ -252,4 +252,86 @@ bool GetNthString(const char* json, const char* field_name, unsigned int n,
   return false;
 }
 
+bool GetNthInt(const char* json, const char* field_name, unsigned int index,
+               int* out_value) {
+  const char* val_ptr = FindValue(json, field_name);
+  if (!val_ptr) return false;
+
+  // If it's an array, jump to the Nth element
+  if (*val_ptr == '[') {
+    val_ptr = GetNthElement(val_ptr, index);
+  }
+  if (!val_ptr) return false;
+
+  val_ptr = SkipWhitespace(val_ptr);
+
+  int result = 0;
+  int sign = 1;
+
+  if (*val_ptr == '-') {
+    sign = -1;
+    val_ptr++;
+  }
+
+  bool has_digits = false;
+  while (*val_ptr >= '0' && *val_ptr <= '9') {
+    result = result * 10 + (*val_ptr - '0');
+    val_ptr++;
+    has_digits = true;
+  }
+
+  if (has_digits) {
+    *out_value = result * sign;
+    return true;
+  }
+  return false;
+}
+
+bool GetNthDouble(const char* json, const char* field_name, unsigned int index,
+                  double* out_value) {
+  const char* val_ptr = FindValue(json, field_name);
+  if (!val_ptr) return false;
+
+  if (*val_ptr == '[') {
+    val_ptr = GetNthElement(val_ptr, index);
+  }
+  if (!val_ptr) return false;
+
+  val_ptr = SkipWhitespace(val_ptr);
+
+  double result = 0.0;
+  double sign = 1.0;
+
+  if (*val_ptr == '-') {
+    sign = -1.0;
+    val_ptr++;
+  }
+
+  // Integer Part
+  bool has_digits = false;
+  while (*val_ptr >= '0' && *val_ptr <= '9') {
+    result = result * 10.0 + (*val_ptr - '0');
+    val_ptr++;
+    has_digits = true;
+  }
+
+  // Fractional Part
+  if (*val_ptr == '.') {
+    val_ptr++;
+    double divisor = 10.0;
+    while (*val_ptr >= '0' && *val_ptr <= '9') {
+      result += (*val_ptr - '0') / divisor;
+      divisor *= 10.0;
+      val_ptr++;
+      has_digits = true;
+    }
+  }
+
+  if (has_digits) {
+    *out_value = result * sign;
+    return true;
+  }
+  return false;
+}
+
 }  // namespace ascijson

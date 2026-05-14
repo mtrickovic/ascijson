@@ -1,0 +1,18 @@
+{
+  "portfolio_name": "Tech Growth 2026",
+  "total_assets": 4,
+  "last_updated_timestamp": 1715712000,
+  "performance_multiplier": -1.25,
+  "holdings": [
+    {
+      "ticker": "NVDA",
+      "shares": 150,
+      "price": 924.50
+    },
+    {
+      "ticker": "AAPL",
+      "shares": 200,
+      "price": 182.32
+    }
+  ]
+}

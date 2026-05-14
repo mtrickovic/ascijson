@@ -25,6 +25,14 @@ const char* GetNthElement(const char* array_json, unsigned int n);
 // Returns pointer to the value of a named key in a top-level JSON object.
 const char* FindValue(const char* json, const char* key);
 
+// Extracts an integer value from a JSON field or array index.
+bool GetNthInt(const char* json, const char* field_name, unsigned int index,
+               int* out_value);
+
+// Extracts a double-precision float from a JSON field or array index.
+bool GetNthDouble(const char* json, const char* field_name, unsigned int index,
+                  double* out_value);
+
 }  // namespace ascijson
 
 #endif  // ASCIJSON_INCLUDE_JSON_HPP_

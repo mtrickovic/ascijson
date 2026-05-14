@@ -151,6 +151,34 @@ int main() {
   Assert("GNE: roundtrip val", strcmp(buf, "three") == 0);
 
   // -------------------------------------------------------
+  // Test Numeric Precision
+  // -------------------------------------------------------
+  std::cout << "\n-- TestNumericPrecision --\n";
+
+  const char* json = R"({
+    "int_val": 12345,
+    "neg_int": -99,
+    "pi": 3.14159,
+    "zero_point": 0.5
+  })";
+
+  int i_val = 0;
+  int n_val = 0;
+  double d_val = 0.0;
+
+  // Test Integer Parsing
+  Assert("Positive Int Conversion",
+         GetNthInt(json, "int_val", 0, &i_val) && i_val == 12345);
+  Assert("Negative Int Conversion",
+         GetNthInt(json, "neg_int", 0, &n_val) && n_val == -99);
+
+  // Test Double Parsing
+  Assert("Double Precision (PI)", GetNthDouble(json, "pi", 0, &d_val) &&
+         (d_val > 3.1415 && d_val < 3.1416));
+  Assert("Leading Zero Double",
+         GetNthDouble(json, "zero_point", 0, &d_val) && d_val == 0.5);
+
+  // -------------------------------------------------------
   Summary();
   return (g_fail_count > 0) ? 1 : 0;
 }
