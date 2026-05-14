@@ -191,7 +191,16 @@ namespace ascijson {
 
   bool GetNthString(const char* json, const char* field_name, unsigned int n,
                     char* out_buffer, size_t buffer_size) {
-    if (!json || !field_name || !out_buffer || buffer_size == 0) return false;
+    if (!json || !out_buffer || buffer_size == 0) return false;
+
+    // If no field name, treat json as pointing directly at a string value
+    if (!field_name) {
+      const char* cursor = SkipWhitespace(json);
+      if (*cursor != '"') return false;
+      cursor++;
+      CopyString(cursor, out_buffer, buffer_size);
+      return true;
+    }
 
     const char* cursor = SkipWhitespace(json);
     if (*cursor != '{' && *cursor != '[') return false;
