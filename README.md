@@ -1,85 +1,251 @@
-# ascijson
+# ascijson — Systems-Oriented Zero-STL JSON Toolkit
 
 [![License MIT][license-badge]][license-link]
 [![C++17][cpp-badge]][cpp-link]
 [![PRs Welcome][prs-badge]][prs-link]
 
+## Table of Contents
+
+- [API Reference](docs/API_REFERENCE.md)
+- [The Pivot](#the-pivot-from-modern-c-to-systems-first)
+- [Key Features](#key-features)
+- [Quick Start](#quick-start)
+  - [Installation](#installation)
+  - [Basic Usage: The "Find & Extract" Pattern](#basic-usage-the-find--extract-pattern)
+  - [Compile and Run](#compile-and-run)
+- [Core API](#core-api)
+  - [Field Counting](#field-counting)
+  - [Value Lookup](#value-lookup)
+  - [String Extraction](#string-extraction)
+  - [Array Navigation](#array-navigation)
+  - [Notes](#notes)
+- [Building from Source](#building-from-source)
+  - [Prerequisites](#prerequisites)
+  - [Build Instructions](#build-instructions)
+  - [Without CMake](#without-cmake)
+- [Testing](#testing)
+  - [Run Tests](#run-tests)
+- [Project Status & Roadmap](#project-status--roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
+- [Support](#support)
+- [Project Stats](#project-stats)
+
+## 🚀 The Pivot: From "Modern C++" to "Systems-First"
+While the original inspiration was a general-purpose parser, **ascijson** has
+evolved into a high-performance **linear-scan tokenizer**. It is specifically
+designed for environments where the Standard Template Library (STL) is
+forbidden, heap fragmentation is a risk, or binary size is critical.
+
+Unlike traditional JSON libraries that build a heavy Document Object Model (DOM)
+tree in memory, **ascijson** uses a **Linear-Scan Architecture**. It treats JSON
+as a read-only stream, allowing you to extract specific data points with nearly
+zero memory overhead and no heap allocations for the tree structure itself.
+
+### Updated Core Philosophy
+- **Zero-STL**: No dependency on `std::string`, `std::vector`, or `std::map`.
+- **Linear-Scan Architecture**: Data is extracted by navigating pointers
+                                directly on the raw buffer. No heavy DOM tree is
+                                built.
+- **Memory Predictability**: Operates entirely with fixed-size buffers or
+                             stack-based pointers.
+
 ---
 
-## Project Docs
+## Key Features
+- **Zero-STL / Zero-Dependency**: Does not use `std::string`, `std::vector`, or
+                                  `std::variant`. Compatible with restricted
+                                  embedded environments and custom allocators.
+- **Linear-Scan Technology**:     Extremely fast data extraction by navigating
+                                  pointers directly on the raw buffer.
+- **Memory Efficient**:           Ideal for high-performance applications where
+                                  heap fragmentation must be avoided.
+- **Portable & Rigid**:           Adheres to the Google C++ Style Guide and
+                                  passes strict warning checks (`-Werror`,
+                                  `-Wall`, `-Wextra`).
+- **Nesting Support**:            Advanced pointer arithmetic allows you to
+                                  "dive" into nested objects and arrays without
+                                  recursive overhead.
 
-- [Inspiration & Future Vision](docs/INSPIRATION.md)
-- [Long-Term Project Plan](docs/ASCIJSON_PROJECT_PLAN.md)
+---
 
-ascijson is a lightweight, zero-dependency JSON parsing library written in
-C/C++.
+## Quick Start
 
-It focuses on:
-- ASCII string parsing
-- Manual tokenization
-- Heap-allocated deserialization
-- Minimal API for extracting structured data from JSON files
+### Installation
 
-This project is designed as both:
-- A practical parsing library
-- A learning-focused implementation of tokenization, parsing, and memory
-  ownership
+Building as a static library via CMake ensures optimal link-time optimization
+and easy asset management (like copying JSON files to your build directory).
 
-## Goals
+```bash
+git clone https://www.github.com/mtrickovic/ascijson.git
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
 
-- Implement a complete JSON tokenizer and parser from scratch
-- Build safe, predictable heap-allocated deserialization
-- Support fast field lookup for structured JSON data
-- Avoid external dependencies
-- Keep the API small, explicit, and testable
+Or add as a Git submodule:
 
-## Planned Features
+```bash
+git submodule add https://github.com/mtrickovic/ascijson.git external/ascijson
+```
 
-- JSON tokenizer (ASCII-based)
-- Escape sequence handling
-- Object and array parsing
-- Heap-allocated string extraction
-- Field counting and indexed access
-- Simple C API with C++ compatibility
-- No dependencies beyond libc / STL (optional)
+### Basic Usage: The "Find & Extract" Pattern
 
-## Core API (WIP)
+Instead of "parsing" the whole file into a heavy object, locate the
+value you want and extract it directly into a pre-allocated buffer.
 
 ```cpp
-namespace ascijson {
-  // Returns the count of a specific field at the current level.
-  unsigned int CountFields(const char* json, const char* field_name);
+#include "include/json.hpp"
+#include <iostream>
 
-  // Extracts the string value of the Nth occurrence of a field.
-  bool GetNthString(const char* json, const char* field_name, unsigned int n,
-                    char* out_buffer, size_t buffer_size);
+int main() {
+    // Parse JSON from string
+    const char* json_ptr = R"({
+      "name": "Alice",
+      "age": "30",
+      "active": true,
+      "scores": ["98", "87", "92"]
+    })";
 
-  // Counts elements in a JSON array.
-  unsigned int CountArrayElements(const char* array_json);
+    // --- Access values ---
+    char name[32] = {0};
+    if (ascijson::GetNthString(json_ptr, "name", 0, name, sizeof(name))) {
+      std::cout << "Name: " << name << std::endl;
+    }
 
-  // Returns pointer to the Nth element inside a json array.
-  const char* GetNthElement(const char* array_json, unsigned int n);
+    // --- Access Values via FindValue ---
+    const char* age_val = ascijson::FindValue(json_ptr, "age");
+    // (Currently, extraction is string-based for Zero-STL)
+    char age_str[8] = {0};
+    if (age_val) {
+      // We treat the value as a string for extraction
+      ascijson::GetNthString(json_ptr, "age", 0, age_str, sizeof(age_str));
+      std::cout << "Age: " << age_str << std::endl;
+    }
+
+    // ---Iterate over arrays ---
+    const char* scores_array = ascijson::FindValue(json_ptr, "scores");
+    if (scores_array) {
+      unsigned int count = ascijson::CountArrayElements(scores_array);
+      std::cout << "Scores: ";
+
+      for (unsigned int i = 0; i < count; ++i) {
+        const char* element = ascijson::GetNthElement(scores_array, i);
+        char score_buf[8] = {0};
+
+        // Extract the string at this specific element pointer
+        // Note: passing nullptr as field_name extracts the current value
+        if (ascijson::GetNthString(element,
+                                   nullptr,
+                                   0,
+                                   score_buf,
+                                   sizeof(score_buf))) {
+          std::cout << score_buf << " ";
+        }
+      }
+      std::cout << std::endl;
+    }
+
+    return 0;
 }
+```
+
+### Compile and Run
+
+```bash
+g++ -std=c++17 -Wall -Wextra -I./include example.cpp src/tokenizer.cpp \
+    -o example
+./example
 ```
 
 ---
 
-### Standard Build (Recommended)
+## Core API
 
-This method automatically handles the library compilation and copies
-`quotes.json` to your build directory so the demo works out of the box.
+### Field Counting
+```cpp
+// Count occurrences of a key at the top level of an object
+unsigned int CountFields(const char* json, const char* field_name);
+```
+### Value Lookup
+```cpp
+// Returns a pointer to the value of a named key, or nullptr if not found
+const char* FindValue(const char* json, const char* key);
+```
+
+### String Extraction
+```cpp
+// Extract the Nth occurrence of a string value by key into a fixed buffer
+// Pass nullptr as field_name to extract directly from an element pointer
+bool GetNthString(const char* json, const char* field_name, unsigned int n,
+                  char* out_buffer, size_t buffer_size);
+```
+
+### Array Navigation
+```cpp
+// Count elements in a JSON array (pointer must point at '[')
+unsigned int CountArrayElements(const char* array_json);
+
+// Returns a pointer to the Nth element inside a JSON array
+const char* GetNthElement(const char* array_json, unsigned int n);
+```
+
+### Int Parsing
+```cpp
+bool GetNthInt(const char* json, const char* field_name, unsigned int index,
+               int* out_value);
+```
+
+### Double Parsing
+```cpp
+bool GetNthDouble(const char* json, const char* field_name, unsigned int index,
+                  double* out_value);
+```
+
+### `IsTrue` Parsing
+```cpp
+bool IsTrue(const char* json, const char* field_name);
+```
+
+### `IsFalse` Parsing
+```cpp
+bool IsFalse(const char* json, const char* field_name);
+```
+
+### `IsNull` Parsing
+```cpp
+bool IsNull(const char* json, const char* field_name);
+```
+
+###
+### Notes
+- All functions accept raw `const char*` — no heap allocation for the tree
+- Functions return `false` or `nullptr` on failure, no exceptions throw
+- Buffers are caller-allocated; always pass `sizeof(buffer)` as the size
+- `FindValue` and `GetNthElement` return interior pointers into the
+  original buffer — do not free them
+
+---
+
+## Building from Source
+
+### Prerequisites
+
+- C++17 compatible compiler (GCC 7+, Clang 5+, MSVC 2017+)
+- CMake 3.10+ (optional, for building tests and examples)
+
+### Build Instructions
 
 **Linux / macOS**
 ```bash
-# Create a build directory
-mkdir build && cd build
-
-# Configure and build
-cmake ..
-cmake --build .
-
-# Run the random quote generator
-./quotes_display
+git clone https://github.com/mtrickovic/ascijson.git
+cd ascijson
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+cd build
+./tokenizer_test
+./basic_usage && ./quotes_display && ./basic_numerics && ./basic_boolnull
 ```
 
 **Windows (Visual Studio)**
@@ -87,7 +253,7 @@ cmake --build .
 mkdir build && cd build
 cmake ..
 cmake --build . --config Release
-cd Release && quotes_display.exe
+cd Release && tokenizer_test.exe
 ```
 
 **Windows (MinGW / MSYS2)**
@@ -95,85 +261,193 @@ cd Release && quotes_display.exe
 mkdir build && cd build
 cmake .. -G "MinGW Makefiles"
 cmake --build .
-.\quotes_display.exe
+.\tokenizer_test.exe
 ```
 
-### Manual Compilation (Quick Check)
+### Without CMake
 
-To build the example application using a C++17 compatible compiler (GCC 7+ or
-MSVC):
-
-**Linux / macOS**
+#### Ex: Basic Usage
 ```bash
-g++ -std=c++17 -Wall -Wextra -I./include \
-    examples/quotes_display/main.cpp src/tokenizer.cpp \
-    -o quotes_display
+g++ -std=c++17 -Wall -Wextra -I./include examples/basic_usage.cpp \
+    src/tokenizer.cpp -o basic_usage
+./basic_usage
 ```
 
-**Windows (MSVC - Developer Command Prompt)**
+**Windows (MSVC)**
 ```bat
-cl /std:c++17 /EHsc /I./include ^
-   examples\quotes_display\main.cpp src\tokenizer.cpp ^
-   /Fe:quotes_display.exe
+cl /std:c++17 /EHsc /I./include examples\basic_usage.cpp src\tokenizer.cpp /Fe:basic_usage.exe
 ```
 
-**Windows (MinGW)**
+#### Ex: Quotes Display
 ```bash
-g++ -std=c++17 -Wall -Wextra -I./include \
-    examples/quotes_display/main.cpp src/tokenizer.cpp \
-    -o quotes_display.exe
+g++ -std=c++17 -Wall -Wextra -I./include examples/quotes_display/main.cpp \
+    src/tokenizer.cpp -o quotes_display
+cp ./examples/quotes_display/quotes.json . && ./quotes_display
 ```
 
-> **Note:** Ensure `quotes.json` is in the same directory as the binary,
-> or use the CMake build which copies it automatically.
+**Windows (MSVC)**
+```bat
+cl /std:c++17 /EHsc /I./include examples\quotes_display\main.cpp src\tokenizer.cpp /Fe:quotes_display.exe
+copy examples\quotes_display\quotes.json . && quotes_display.exe
+```
+
+#### Ex: Basic Numerics
+```bash
+g++ -std=c++17 -Wall -Wextra -I./include examples/basic_numerics/main.cpp \
+    src/tokenizer.cpp -o basic_numerics
+cp ./examples/basic_numerics/portfolio.json . && ./basic_numerics
+```
+
+**Windows (MSVC)**
+```bat
+cl /std:c++17 /EHsc /I./include examples\basic_numerics\main.cpp src\tokenizer.cpp /Fe:basic_numerics.exe
+copy examples\basic_numerics\portfolio.json . && basic_numerics.exe
+```
+
+#### Ex: Basic Bool Null
+```bash
+g++ -std=c++17 -Wall -Wextra -I./include examples/basic_boolnull/main.cpp \
+    src/tokenizer.cpp -o basic_boolnull
+cp ./examples/basic_boolnull/flags.json . && ./basic_boolnull
+```
+
+**Windows (MSVC)**
+```bat
+cl /std:c++17 /EHsc /I./include examples\basic_boolnull\main.cpp src\tokenizer.cpp /Fe:basic_boolnull.exe
+copy examples\basic_boolnull\flags.json . && basic_boolnull.exe
+```
+
 ---
 
-### Example Usage
+## Testing
 
-```c
-const char* json = "{ \"text\": \"hello\", \"text\": \"world\" }";
-unsigned int count = ascijson::CountFields(json, "text");
+The project includes a test suite covering:
+- Null and safety guard checks for all public API functions
+- Field counting with single, multiple, and missing keys
+- Nested object and array isolation
+- Prefix protection (e.g. `"user"` vs `"username"`)
+- String extraction by index and out-of-range handling
+- Direct element extraction via `nullptr` field name
+- Round-trip: `GetNthElement` + `GetNthString` on object arrays
 
-char buf[64];
-if (ascijson::GetNthString(json, "text", 1, buf, sizeof(buf))) {
-  printf("%s\n", buf);
-}
+### Run Tests
+
+```bash
+# From project root
+mkdir -p build && cd build
+cmake ..
+cmake --build .
+ctest --output-on-failure
 ```
 
 ---
 
-### Project Status
+## Project Status & Roadmap
 
-Early development
-Currently implementing:
-- ASCII tokenizer
-- String parsing
-- Escape handling
+### Current Version: 0.2.0 (Early Development)
 
-## Learning Focus
+**Completed:**
+- Linear-scan tokenizer with zero-STL, zero-dependency design
+- Public API: `CountFields`, `GetNthString`, `FindValue`,
+  `CountArrayElements`, `GetNthElement`
+- `GetNthString` with `nullptr` field name for direct element extraction
+- Test suite covering all public API functions with null safety,
+  edge cases, and round-trip tests
+- `quotes_display` example — reads JSON file, picks random quote
+- CMake build for Linux, macOS, and Windows (MSVC + MinGW)
+- Google Style `.clang-format` applied across all files
+- Cross-platform MSVC warning fixes (`fopen_s`, `time_t` cast)
 
-This project exists to deeply understand:
+**Known Limitations:**
+- ~~No number extraction (all values treated as strings)~~
+- No escape sequence handling beyond `\"`
+- No unicode support
+- Buffer overflow risk on values exceeding fixed buffer sizes
+- No error reporting — functions return `false` or `nullptr` silently
 
-- Manual memory management
-- Tokenization and parsing algorithms
-- ASCII string processing
-- Serialization / deserialization design
-- Building small, composable C APIs
+**Not Planned:**
+- Full RFC 8259 compliance
+- DOM tree / full parse
+- STL-style API
 
-## Project Layout
+---
 
-```text
-ascijson/
- ├── include/
- │    └── json.hpp
- ├── src/
- │    ├── json.cpp
- │    ├── tokenizer.cpp
- │    └── parser.cpp
- ├── tests/
- ├── examples/
- └── README.md
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md)
+for:
+
+- Code style guidelines
+- How to submit pull requests
+- Testing requirements
+- Issue reporting guidelines
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE)
+file for details.
+
 ```
+MIT License
+
+Copyright (c) 2025 Marko Trickovic
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+---
+
+## Acknowledgments
+
+- [RFC 8259](https://tools.ietf.org/html/rfc8259) - The JSON Data Interchange Format
+- [nlohmann/json](https://github.com/nlohmann/json) - Inspiration for API design
+- [RapidJSON](https://github.com/Tencent/rapidjson) - Inspiration for performance techniques
+- [JSON Test Suite](https://github.com/nst/JSONTestSuite) - Comprehensive test cases
+
+---
+
+## Support
+
+- **Bug Reports:** [GitHub Issues](https://github.com/mtrickovic/ascijson/issues)
+- **Feature Requests:** [GitHub Discussions](https://github.com/mtrickovic/ascijson/discussions)
+- **Email:** marko@trickovic.dev
+- **LinkedIn:** [Marko Trickovic](https://linkedin.com/in/markotrickovic)
+
+---
+
+## Project Stats
+
+![GitHub stars](https://img.shields.io/github/stars/mtrickovic/ascijson?style=social)
+![GitHub forks](https://img.shields.io/github/forks/mtrickovic/ascijson?style=social)
+![GitHub watchers](https://img.shields.io/github/watchers/mtrickovic/ascijson?style=social)
+
+---
+
+<div align="center">
+
+**[API Reference](docs/API_REFERENCE.md)** • **[Examples](examples/)** • **[Contributing](docs/CONTRIBUTING.md)** • **[Changelog](docs/CHANGELOG.md)**
+
+Made with care by [Marko Trickovic](https://github.com/mtrickovic)
+
+</div>
 
 [license-badge]: https://img.shields.io/badge/License-MIT-blue.svg
 [license-link]:  LICENSE
