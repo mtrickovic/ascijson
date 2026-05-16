@@ -311,6 +311,7 @@ bool GetNthString(const char* json,
     }
     cursor++;
     CopyString(cursor, out_buffer, buffer_size);
+    SetError(out_error, Error::kNone);
     return true;
   }
 
@@ -339,6 +340,7 @@ bool GetNthString(const char* json,
             if (*cursor == '"') {
               cursor++;  // Move inside the quotes of the value
               CopyString(cursor, out_buffer, buffer_size);
+              SetError(out_error, Error::kNone);
               return true;
             }
           }
@@ -363,7 +365,7 @@ bool GetNthString(const char* json,
     if (*cursor == ',') cursor++;
   }
 
-  SetError(out_error, Error::kFieldNotFound);
+  SetError(out_error, Error::kNone);
   return false;
 }
 
