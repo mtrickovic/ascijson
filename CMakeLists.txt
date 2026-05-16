@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(ascijson VERSION 0.1.0 LANGUAGES CXX)
+project(ascijson VERSION 0.2.1 LANGUAGES CXX)
 
 # Standard C++17 compliance
 set(CMAKE_CXX_STANDARD 17)

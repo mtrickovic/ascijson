@@ -422,6 +422,7 @@ re-running with the same seed.
 - No unicode support
 - Buffer overflow risk on values exceeding fixed buffer sizes
 - No error reporting — functions return `false` or `nullptr` silently
+- Unicode escape sequences (`\uXXXX`) are replaced with `?` — no UTF-8 output
 
 **Not Planned:**
 - Full RFC 8259 compliance

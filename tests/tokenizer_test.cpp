@@ -87,6 +87,36 @@ int main() {
   Assert("GNS: escaped quotes",
          GetNthString(escaped, "msg", 0, buf, sizeof(buf)));
 
+  // Escape sequence handling
+  const char* escapes =
+    R"({"a":"hello\nworld","b":"tab\there","c":"back\\slash",)"
+    R"("d":"quote\"end","e":"caf\u00e9"})";
+
+  memset(buf, 0, sizeof(buf));
+  Assert("ESC: newline",
+         GetNthString(escapes, "a", 0, buf, sizeof(buf)) &&
+         strcmp(buf, "hello\nworld") == 0);
+
+  memset(buf, 0, sizeof(buf));
+  Assert("ESC: tab",
+         GetNthString(escapes, "b", 0, buf, sizeof(buf)) &&
+         strcmp(buf, "tab\there") == 0);
+
+  memset(buf, 0, sizeof(buf));
+  Assert("ESC: backslash",
+         GetNthString(escapes, "c", 0, buf, sizeof(buf)) &&
+         strcmp(buf, "back\\slash") == 0);
+
+  memset(buf, 0, sizeof(buf));
+  Assert("ESC: quote",
+         GetNthString(escapes, "d", 0, buf, sizeof(buf)) &&
+         strcmp(buf, "quote\"end") == 0);
+
+  memset(buf, 0, sizeof(buf));
+  Assert("ESC: unicode placeholder",
+         GetNthString(escapes, "e", 0, buf, sizeof(buf)) &&
+         strcmp(buf, "caf?") == 0);
+
   // -------------------------------------------------------
   // FindValue
   // -------------------------------------------------------

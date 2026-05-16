@@ -47,6 +47,16 @@ const char* SkipString(const char* cursor, Error* out_error) {
         SetError(out_error, Error::kInvalidJson);
         return nullptr;
       }
+      // \uXXXX — skip 4 hex digits after the 'u'
+      if (*cursor == 'u') {
+        for (int i = 0; i < 4; ++i) {
+          cursor++;
+          if (*cursor == '\0') {
+            SetError(out_error, Error::kInvalidJson);
+            return nullptr;
+          }
+        }
+      }
     }
     cursor++;
   }
@@ -117,12 +127,37 @@ bool IsMatch(const char* cursor, const char* field_name) {
 
 // Internal helper: only visible in this file
 void CopyString(const char* source, char* dest, size_t dest_size) {
-  size_t i = 0;
-  while (source[i] != '"' && source[i] != '\0' && i < (dest_size - 1)) {
-    dest[i] = source[i];
+  size_t i = 0;  // source index
+  size_t o = 0;  // dest index
+  while (source[i] != '"' && source[i] != '\0' && o < (dest_size - 1)) {
+    if (source[i] == '\\') {
+      i++;
+      if (source[i] == '\0') break;
+      switch(source[i]) {
+        case '"':  dest[o++] = '"';  break;
+        case '\\': dest[o++] = '\\'; break;
+        case '/':  dest[o++] = '/';  break;
+        case 'b':  dest[o++] = '\b'; break;
+        case 'f':  dest[o++] = '\f'; break;
+        case 'n':  dest[o++] = '\n'; break;
+        case 'r':  dest[o++] = '\r'; break;
+        case 't':  dest[o++] = '\t'; break;
+        case 'u':
+          // No unicode support — skip 4 hex digits, wirte '?' placeholder
+          for (int j = 0; j < 4 && source[i + 1] != '\0'; ++j) i++;
+          dest[o++] = '?';
+          break;
+        default:
+          // Unknown escape — pass through as-is
+          dest[o++] = source[i];
+          break;
+      }
+    } else {
+      dest[o++] = source[i];
+    }
     i++;
   }
-  dest[i] = '\0';
+  dest[o] = '\0';
 }
 
 // Checks whether the cursor points at a specific literal token
