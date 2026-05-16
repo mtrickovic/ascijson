@@ -25,6 +25,7 @@
   - [Without CMake](#without-cmake)
 - [Testing](#testing)
   - [Run Tests](#run-tests)
+  - [Fuzz Testing](#fuzz-testing)
 - [Project Status & Roadmap](#project-status--roadmap)
 - [Contributing](#contributing)
 - [License](#license)
@@ -100,54 +101,45 @@ value you want and extract it directly into a pre-allocated buffer.
 #include <iostream>
 
 int main() {
-    // Parse JSON from string
-    const char* json_ptr = R"({
-      "name": "Alice",
-      "age": "30",
-      "active": true,
-      "scores": ["98", "87", "92"]
-    })";
+  // Parse JSON from string
+  const char* json_ptr = R"({
+    "name": "Alice",
+    "age": "30",
+    "active": true,
+    "scores": ["98", "87", "92"]
+  })";
 
-    // --- Access values ---
-    char name[32] = {0};
-    if (ascijson::GetNthString(json_ptr, "name", 0, name, sizeof(name))) {
-      std::cout << "Name: " << name << std::endl;
-    }
+  ascijson::Error err;
 
-    // --- Access Values via FindValue ---
-    const char* age_val = ascijson::FindValue(json_ptr, "age");
-    // (Currently, extraction is string-based for Zero-STL)
-    char age_str[8] = {0};
-    if (age_val) {
-      // We treat the value as a string for extraction
-      ascijson::GetNthString(json_ptr, "age", 0, age_str, sizeof(age_str));
-      std::cout << "Age: " << age_str << std::endl;
-    }
+  // --- Extract a string field ---
+  char name[32] = {0};
+  if (ascijson::GetNthString(json_ptr, "name", 0, name, sizeof(name), &err)) {
+    std::cout << "Name: " << name << std::endl;
+  }
 
-    // ---Iterate over arrays ---
-    const char* scores_array = ascijson::FindValue(json_ptr, "scores");
-    if (scores_array) {
-      unsigned int count = ascijson::CountArrayElements(scores_array);
-      std::cout << "Scores: ";
+  // --- Navigate into an array ---
+  const char* scores_array = ascijson::FindValue(json_ptr, "scores", &err);
+  if (scores_array) {
+    unsigned int count = ascijson::CountArrayElements(scores_array, &err);
+    std::cout << "Scores: ";
 
-      for (unsigned int i = 0; i < count; ++i) {
-        const char* element = ascijson::GetNthElement(scores_array, i);
-        char score_buf[8] = {0};
+    for (unsigned int i = 0; i < count; ++i) {
+      const char* element = ascijson::GetNthElement(scores_array, i, &err);
+      char score_buf[8] = {0};
 
-        // Extract the string at this specific element pointer
-        // Note: passing nullptr as field_name extracts the current value
-        if (ascijson::GetNthString(element,
-                                   nullptr,
-                                   0,
-                                   score_buf,
-                                   sizeof(score_buf))) {
-          std::cout << score_buf << " ";
-        }
+      // Pass nullptr as field_name to extract the value at this element pointer
+      if (ascijson::GetNthString(element,
+                                 nullptr,
+                                 0,
+                                 score_buf,
+                                 sizeof(score_buf),
+                                 &err)) {
+        std::cout << score_buf << " ";
       }
-      std::cout << std::endl;
     }
-
-    return 0;
+    std::cout << std::endl;
+  }
+  return EXIT_SUCCESS;
 }
 ```
 
@@ -163,68 +155,97 @@ g++ -std=c++17 -Wall -Wextra -I./include example.cpp src/tokenizer.cpp \
 
 ## Core API
 
+All functions accept an optional `Error* out_error` as their last parameter.
+Pass `nullptr` to ignore errors, or a pointer to an `ascijson::Error` to
+inspect the result. Possible values: `kNone`, `kInvalidJson`, `kFieldNotFound`,
+`kMemoryError`.
+
 ### Field Counting
 ```cpp
 // Count occurrences of a key at the top level of an object
-unsigned int CountFields(const char* json, const char* field_name);
+unsigned int CountFields(const char* json,
+                         const char* field_name,
+                         Error* out_error = nullptr);
 ```
 ### Value Lookup
 ```cpp
 // Returns a pointer to the value of a named key, or nullptr if not found
-const char* FindValue(const char* json, const char* key);
+const char* FindValue(const char* json,
+                      const char* key,
+                      Error* out_error = nullptr);
 ```
 
 ### String Extraction
 ```cpp
 // Extract the Nth occurrence of a string value by key into a fixed buffer
 // Pass nullptr as field_name to extract directly from an element pointer
-bool GetNthString(const char* json, const char* field_name, unsigned int n,
-                  char* out_buffer, size_t buffer_size);
+bool GetNthString(const char* json,
+                  const char* field_name,
+                  unsigned int n,
+                  char* out_buffer,
+                  size_t buffer_size,
+                  Error* out_error = nullptr);
 ```
 
 ### Array Navigation
 ```cpp
 // Count elements in a JSON array (pointer must point at '[')
-unsigned int CountArrayElements(const char* array_json);
+unsigned int CountArrayElements(const char* array_json,
+                                Error* out_error = nullptr);
 
 // Returns a pointer to the Nth element inside a JSON array
-const char* GetNthElement(const char* array_json, unsigned int n);
+const char* GetNthElement(const char* array_json,
+                          unsigned int n,
+                          Error* out_error = nullptr);
 ```
 
 ### Int Parsing
 ```cpp
-bool GetNthInt(const char* json, const char* field_name, unsigned int index,
-               int* out_value);
+bool GetNthInt(const char* json,
+               const char* field_name,
+               unsigned int index,
+               int* out_value,
+               Error* out_error = nullptr);
 ```
 
 ### Double Parsing
 ```cpp
-bool GetNthDouble(const char* json, const char* field_name, unsigned int index,
-                  double* out_value);
+bool GetNthDouble(const char* json,
+                  const char* field_name,
+                  unsigned int index,
+                  double* out_value,
+                  Error* out_error = nullptr);
 ```
 
 ### `IsTrue` Parsing
 ```cpp
-bool IsTrue(const char* json, const char* field_name);
+bool IsTrue(const char* json,
+            const char* field_name,
+            Error* out_error = nullptr);
 ```
 
 ### `IsFalse` Parsing
 ```cpp
-bool IsFalse(const char* json, const char* field_name);
+bool IsFalse(const char* json,
+             const char* field_name,
+             Error* out_error = nullptr);
 ```
 
 ### `IsNull` Parsing
 ```cpp
-bool IsNull(const char* json, const char* field_name);
+bool IsNull(const char* json,
+            const char* field_name,
+            Error* out_error = nullptr);
 ```
 
 ###
 ### Notes
 - All functions accept raw `const char*` — no heap allocation for the tree
-- Functions return `false` or `nullptr` on failure, no exceptions throw
+- Functions return `false` or `nullptr` on failure, no exceptions thrown
 - Buffers are caller-allocated; always pass `sizeof(buffer)` as the size
 - `FindValue` and `GetNthElement` return interior pointers into the
   original buffer — do not free them
+- `IsTrue`, `IsFalse`, and `IsNull` are mutually exclusive for any given field
 
 ---
 
@@ -340,6 +361,38 @@ cmake --build .
 ctest --output-on-failure
 ```
 
+### Fuzz Testing
+
+A standalone random fuzzer is included in `tests/fuzz.cpp`. It requires no
+special compiler support and works with both g++ and MSVC.
+
+**Build with CMake (recommended — enables ASan + UBSan on g++ automatically):**
+```bash
+cmake -DBUILD_FUZZING=ON ..
+cmake --build .
+```
+
+**Build without CMake:**
+```bash
+# g++ (with sanitizers for deeper crash detection)
+g++ -std=c++17 -O2 -fsanitize=address,undefined \
+    -I./include tests/fuzz.cpp src/tokenizer.cpp -o fuzz
+```
+
+```bat
+# MSVC
+cl /std:c++17 /O2 /I./include tests\fuzz.cpp src\tokenizer.cpp /Fe:fuzz.exe
+```
+
+**Run:**
+```bash
+./fuzz         # random seed
+./fuzz 12345   # fixed seed — fully reproducible
+```
+
+The seed is printed at startup, so any crash can be reproduced exactly by
+re-running with the same seed.
+
 ---
 
 ## Project Status & Roadmap
@@ -351,6 +404,11 @@ ctest --output-on-failure
 - Public API: `CountFields`, `GetNthString`, `FindValue`,
   `CountArrayElements`, `GetNthElement`
 - `GetNthString` with `nullptr` field name for direct element extraction
+- `GetNthInt` and `GetNthDouble` for numeric extraction
+- `IsTrue`, `IsFalse`, `IsNull` for boolean and null field checks
+- Error reporting via `Error` enum and `out_error` propagation across all
+  public API functions
+- Standalone random fuzzer with reproducible seeds (`tests/fuzz.cpp`)
 - Test suite covering all public API functions with null safety,
   edge cases, and round-trip tests
 - `quotes_display` example — reads JSON file, picks random quote
