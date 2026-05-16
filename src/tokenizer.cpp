@@ -4,6 +4,10 @@ namespace ascijson {
 
 namespace {
 
+inline void SetError(Error* out_error, Error err) {
+  if (out_error) *out_error = err;
+}
+
 // Internal helper for string comparison (Zero-STL)
 bool StringsAreEqual(const char* s1, const char* s2, size_t n) {
   for (size_t i = 0; i < n; ++i) {
@@ -29,43 +33,75 @@ const char* SkipWhitespace(const char* cursor) {
   return cursor;
 }
 
-// Moves the cursor past the current JSON value (string, object, etc.)
-const char* SkipValue(const char* cursor) {
+// Safely skips a string literal and updates the cursor point
+const char* SkipString(const char* cursor, Error* out_error) {
+  if (!cursor || *cursor != '"') {
+    SetError(out_error, Error::kInvalidJson);
+    return nullptr;
+  }
+  cursor++; // Move past opening '"'
+  while (*cursor != '\0' && *cursor != '"') {
+    if (*cursor == '\\') {
+      cursor++;
+      if (*cursor == '\0') {
+        SetError(out_error, Error::kInvalidJson);
+        return nullptr;
+      }
+    }
+    cursor++;
+  }
+  if (*cursor != '"') {
+    SetError(out_error, Error::kInvalidJson);
+    return nullptr;
+  }
+  return cursor + 1; // Return character immediately following closing '"'
+}
+
+// Moves the cursor past the current JSON value (string, object, array, or
+// primitive)
+const char* SkipValue(const char* cursor, Error* out_error) {
   cursor = SkipWhitespace(cursor);
-  if (!cursor || *cursor == '\0') return nullptr;
+  if (!cursor || *cursor == '\0') {
+    SetError(out_error, Error::kInvalidJson);
+    return nullptr;
+  }
 
   if (*cursor == '"') {
-    // Skip String
-    cursor++;
-    while (*cursor != '\0' && *cursor != '"') {
-      if (*cursor == '\\' && *(cursor + 1) != '\0') cursor++;
-      cursor++;
-    }
-    if (*cursor == '"') cursor++;
-  } else if (*cursor == '{' || *cursor == '[') {
+    return SkipString(cursor, out_error);
+  }
+
+  if (*cursor == '{' || *cursor == '[') {
     // Skip Object or Array using brace counting
     char open = *cursor;
     char close = (open == '{') ? '}' : ']';
     int depth = 1;
     cursor++;
-    while (*cursor != '\0' && depth > 0) {
+
+    while (cursor && *cursor != '\0' && depth > 0) {
       if (*cursor == '"') {
-        // Skip strings inside objects/arrays to avoid finding '}' in a str
-        cursor = SkipValue(cursor);  // Reuse logic to skip strings
+        cursor = SkipString(cursor, out_error);
         continue;
       }
       if (*cursor == open) depth++;
-      if (*cursor == close) depth--;
-      cursor++;
+      else if (*cursor == close) depth--;
+
+      if (depth > 0) {
+        cursor++;
+      }
     }
-  } else {
-    // Skip primitive (number, booleans, null)
-    // Scan until comma, closing brace, or whitespace
-    while (*cursor != '\0' && *cursor != ',' && *cursor != '}' &&
-           *cursor != ']' && *cursor != ' ' && *cursor != '\n' &&
-           *cursor != '\r' && *cursor != '\t') {
-      cursor++;
+
+    if (depth != 0 || !cursor || *cursor == '\0') {
+      SetError(out_error, Error::kInvalidJson);
+      return nullptr;
     }
+    return cursor + 1; // Step past the closing structure token
+  }
+
+  // Primitive parsing loop (number, true, false, null)
+  while (*cursor != '\0' && *cursor != ',' && *cursor != '}' &&
+         *cursor != ']' && *cursor != ' ' && *cursor != '\n' &&
+         *cursor != '\r' && *cursor != '\t') {
+    cursor++;
   }
   return cursor;
 }
@@ -106,128 +142,187 @@ bool IsLiteral(const char* cursor, const char* literal, size_t len) {
 
 }  // namespace
 
-unsigned int CountArrayElements(const char* json) {
+unsigned int CountArrayElements(const char* json, Error* out_error) {
+  SetError(out_error, Error::kNone);
   if (!json) return 0;
+
   const char* cursor = SkipWhitespace(json);
-  if (*cursor != '[') return 0;
+  if (*cursor != '[') {
+    SetError(out_error, Error::kInvalidJson);
+    return 0;
+  }
   cursor++;
 
   cursor = SkipWhitespace(cursor);
   if (*cursor == ']') return 0;  // empty array
 
   unsigned int count = 1;
-  while (*cursor != '\0' && *cursor != ']') {
-    cursor = SkipValue(cursor);
+  while (cursor && *cursor != '\0' && *cursor != ']') {
+    cursor = SkipValue(cursor, out_error);
+    if (!cursor) return 0; // Propagate tracking error
     cursor = SkipWhitespace(cursor);
     if (*cursor == ',') {
       count++;
       cursor++;
+    } else if (*cursor != ']') {
+      SetError(out_error, Error::kInvalidJson);
+      return 0;
     }
   }
   return count;
 }
 
-const char* GetNthElement(const char* json, unsigned int n) {
+const char* GetNthElement(const char* json, unsigned int n, Error* out_error) {
+  SetError(out_error, Error::kInvalidJson);
   if (!json) return nullptr;
+
   const char* cursor = SkipWhitespace(json);
-  if (*cursor != '[') return nullptr;
+  if (*cursor != '[') {
+    SetError(out_error, Error::kInvalidJson);
+    return nullptr;
+  }
   cursor++;
 
   unsigned int idx = 0;
-  while (*cursor != '\0') {
+  while (cursor && *cursor != '\0') {
     cursor = SkipWhitespace(cursor);
     if (*cursor == ']' || *cursor == '\0') break;
     if (idx == n) return cursor;  // pointer to the Nth { ... }
-    cursor = SkipValue(cursor);
+
+    cursor = SkipValue(cursor, out_error);
+    if (!cursor) return nullptr;
     cursor = SkipWhitespace(cursor);
     if (*cursor == ',') cursor++;
     idx++;
   }
+  SetError(out_error, Error::kFieldNotFound);
   return nullptr;
 }
 
 // Returns a pointer to the value of a named key in a top-level object.
-const char* FindValue(const char* json, const char* key) {
+const char* FindValue(const char* json, const char* key, Error* out_error) {
+  SetError(out_error, Error::kNone);
   if (!json || !key) return nullptr;
+
   const char* cursor = SkipWhitespace(json);
-  if (!cursor || *cursor != '{') return nullptr;
+  if (!cursor || *cursor != '{') {
+    SetError(out_error, Error::kInvalidJson);
+    return nullptr;
+  }
   cursor++;
 
-  while (*cursor != '\0' && *cursor != '}') {
+  while (cursor && *cursor != '\0' && *cursor != '}') {
     cursor = SkipWhitespace(cursor);
     if (*cursor == '"') {
       bool matched = IsMatch(cursor, key);
-      cursor = SkipValue(cursor);  // skip key string
+      cursor = SkipValue(cursor, out_error);  // skip key string
+      if (!cursor) return nullptr;
       cursor = SkipWhitespace(cursor);
       if (*cursor == ':') {
         cursor++;
         cursor = SkipWhitespace(cursor);
         if (matched) return cursor;  // return pointer to value
-        cursor = SkipValue(cursor);
+        cursor = SkipValue(cursor, out_error);
+        if (!cursor) return nullptr;
+      } else {
+        SetError(out_error, Error::kInvalidJson);
+        return nullptr;
       }
     } else {
-      cursor++;
+      SetError(out_error, Error::kInvalidJson);
+      return nullptr;
     }
     cursor = SkipWhitespace(cursor);
     if (*cursor == ',') cursor++;
   }
+
+  if (!cursor || *cursor != '}') {
+    SetError(out_error, Error::kInvalidJson);
+    return nullptr;
+  }
+
+  SetError(out_error, Error::kFieldNotFound);
   return nullptr;
 }
 
-unsigned int CountFields(const char* json, const char* field_name) {
+unsigned int CountFields(const char* json,
+                         const char* field_name,
+                         Error *out_error) {
+  SetError(out_error, Error::kNone);
   if (!json || !field_name) return 0;
 
   unsigned int count = 0;
   const char* cursor = SkipWhitespace(json);
 
-  if (*cursor != '{') return 0;
+  if (*cursor != '{') {
+    SetError(out_error, Error::kInvalidJson);
+    return 0;
+  }
   cursor++;
 
-  while (*cursor != '\0' && *cursor != '}') {
+  while (cursor && *cursor != '\0' && *cursor != '}') {
     cursor = SkipWhitespace(cursor);
     if (*cursor == '"') {
       if (IsMatch(cursor, field_name)) {
         count++;
       }
       // Skip the key
-      cursor = SkipValue(cursor);
+      cursor = SkipValue(cursor, out_error);
+      if (!cursor) return 0;
       cursor = SkipWhitespace(cursor);
 
       // Skip the colon and the value
       if (*cursor == ':') {
         cursor++;
-        cursor = SkipValue(cursor);
+        cursor = SkipValue(cursor, out_error);
+        if (!cursor) return 0;
+      } else {
+        SetError(out_error, Error::kInvalidJson);
+        return 0;
       }
     } else {
-      cursor++;
+      SetError(out_error, Error::kInvalidJson);
+      return 0;
     }
     cursor = SkipWhitespace(cursor);
     if (*cursor == ',') cursor++;
   }
-
   return count;
 }
 
-bool GetNthString(const char* json, const char* field_name, unsigned int n,
-                  char* out_buffer, size_t buffer_size) {
-  if (!json || !out_buffer || buffer_size == 0) return false;
+bool GetNthString(const char* json,
+                  const char* field_name,
+                  unsigned int n,
+                  char* out_buffer,
+                  size_t buffer_size,
+                  Error* out_error) {
+  SetError(out_error, Error::kInvalidJson);
+  if (!json || !out_buffer || buffer_size == 0) {
+    SetError(out_error, Error::kMemoryError);
+    return false;
+  }
 
   // If no field name, treat json as pointing directly at a string value
   if (!field_name) {
     const char* cursor = SkipWhitespace(json);
-    if (*cursor != '"') return false;
+    if (*cursor != '"') {
+      SetError(out_error, Error::kInvalidJson);
+      return false;
+    }
     cursor++;
     CopyString(cursor, out_buffer, buffer_size);
     return true;
   }
 
   const char* cursor = SkipWhitespace(json);
-  if (*cursor != '{' && *cursor != '[') return false;
+  if (*cursor != '{' && *cursor != '[') {
+    SetError(out_error, Error::kInvalidJson);
+    return false;
+  }
   cursor++;
 
   unsigned int match_count = 0;
-
-  while (*cursor != '\0') {
+  while (cursor && *cursor != '\0') {
     cursor = SkipWhitespace(cursor);
     if (*cursor == '}' || *cursor == ']') break;
 
@@ -235,7 +330,8 @@ bool GetNthString(const char* json, const char* field_name, unsigned int n,
       if (IsMatch(cursor, field_name)) {
         if (match_count == n) {
           // Found the Nth occurrence! Now find the value.
-          cursor = SkipValue(cursor);  // Move the past key
+          cursor = SkipValue(cursor, out_error);  // Move the past key
+          if (!cursor) return false;
           cursor = SkipWhitespace(cursor);
           if (*cursor == ':') {
             cursor++;
@@ -250,31 +346,38 @@ bool GetNthString(const char* json, const char* field_name, unsigned int n,
         match_count++;
       }
       // Not the Nth one or not the right key, skip the key and the value
-      cursor = SkipValue(cursor);
+      cursor = SkipValue(cursor, out_error);
+      if (!cursor) return false;
       cursor = SkipWhitespace(cursor);
       if (*cursor == ':') {
         cursor++;
-        cursor = SkipValue(cursor);
+        cursor = SkipValue(cursor, out_error);
+        if (!cursor) return false;
       }
     } else {
-      cursor++;
+      SetError(out_error, Error::kInvalidJson);
+      return false;
     }
 
     cursor = SkipWhitespace(cursor);
     if (*cursor == ',') cursor++;
   }
 
+  SetError(out_error, Error::kFieldNotFound);
   return false;
 }
 
-bool GetNthInt(const char* json, const char* field_name, unsigned int index,
-               int* out_value) {
-  const char* val_ptr = FindValue(json, field_name);
+bool GetNthInt(const char* json,
+               const char* field_name,
+               unsigned int index,
+               int* out_value,
+               Error* out_error) {
+  const char* val_ptr = FindValue(json, field_name, out_error);
   if (!val_ptr) return false;
 
   // If it's an array, jump to the Nth element
   if (*val_ptr == '[') {
-    val_ptr = GetNthElement(val_ptr, index);
+    val_ptr = GetNthElement(val_ptr, index, out_error);
   }
   if (!val_ptr) return false;
 
@@ -296,24 +399,28 @@ bool GetNthInt(const char* json, const char* field_name, unsigned int index,
   }
 
   if (has_digits) {
-    *out_value = result * sign;
+    if (out_value) *out_value = result * sign;
+    SetError(out_error, Error::kNone);
     return true;
   }
+  SetError(out_error, Error::kInvalidJson);
   return false;
 }
 
-bool GetNthDouble(const char* json, const char* field_name, unsigned int index,
-                  double* out_value) {
-  const char* val_ptr = FindValue(json, field_name);
+bool GetNthDouble(const char* json,
+                  const char* field_name,
+                  unsigned int index,
+                  double* out_value,
+                  Error* out_error) {
+  const char* val_ptr = FindValue(json, field_name, out_error);
   if (!val_ptr) return false;
 
   if (*val_ptr == '[') {
-    val_ptr = GetNthElement(val_ptr, index);
+    val_ptr = GetNthElement(val_ptr, index, out_error);
   }
   if (!val_ptr) return false;
 
   val_ptr = SkipWhitespace(val_ptr);
-
   double result = 0.0;
   double sign = 1.0;
 
@@ -343,26 +450,28 @@ bool GetNthDouble(const char* json, const char* field_name, unsigned int index,
   }
 
   if (has_digits) {
-    *out_value = result * sign;
+    if (out_value) *out_value = result * sign;
+    SetError(out_error, Error::kNone);
     return true;
   }
+  SetError(out_error, Error::kInvalidJson);
   return false;
 }
 
-bool IsTrue(const char* json, const char* field_name) {
-  const char* val = FindValue(json, field_name);
+bool IsTrue(const char* json, const char* field_name, Error* out_error) {
+  const char* val = FindValue(json, field_name, out_error);
   if (!val) return false;
   return IsLiteral(val, "true", 4);
 }
 
-bool IsFalse(const char* json, const char* field_name) {
-  const char* val = FindValue(json, field_name);
+bool IsFalse(const char* json, const char* field_name, Error* out_error) {
+  const char* val = FindValue(json, field_name, out_error);
   if (!val) return false;
   return IsLiteral(val, "false", 5);
 }
 
-bool IsNull(const char* json, const char* field_name) {
-  const char* val = FindValue(json, field_name);
+bool IsNull(const char* json, const char* field_name, Error* out_error) {
+  const char* val = FindValue(json, field_name, out_error);
   if (!val) return false;
   return IsLiteral(val, "null", 4);
 }
