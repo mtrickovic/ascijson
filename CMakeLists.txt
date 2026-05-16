@@ -37,7 +37,20 @@ if (BUILD_TESTING)
   add_test(NAME TokenizerTests COMMAND tokenizer_test)
 endif()
 
-# 3. Examples
+# 3. Fuzzing (Disabled by default)
+option(BUILD_FUZZING "Build the fuzz tester" OFF)
+if (BUILD_FUZZING)
+  add_executable(fuzz tests/fuzz.cpp)
+  target_link_libraries(fuzz PRIVATE ascijson)
+
+  # Enable ASan + UBSan on GCC/Clang for deeper crash detection
+  if (NOT MSVC)
+    target_compile_options(fuzz PRIVATE -fsanitize=address,undefined)
+    target_link_options(fuzz PRIVATE -fsanitize=address,undefined)
+  endif()
+endif()
+
+# 4. Examples
 add_executable(basic_usage examples/basic_usage.cpp)
 target_link_libraries(basic_usage PRIVATE ascijson)
 add_executable(quotes_display examples/quotes_display/main.cpp)
@@ -67,6 +80,6 @@ add_custom_command(TARGET basic_numerics POST_BUILD
 add_custom_command(TARGET basic_boolnull POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy
     ${CMAKE_SOURCE_DIR}/examples/basic_boolnull/flags.json
-    $<TARGET_FILE_DIR:basic_numerics>/flags.json
+    $<TARGET_FILE_DIR:basic_boolnull>/flags.json
   COMMENT "Copying flags.json to build dir"
 )
