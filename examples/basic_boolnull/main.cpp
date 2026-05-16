@@ -11,10 +11,13 @@ char* LoadFile(const char* path);
 //   null  -> "[UNSET]"
 //   else  -> "[UNKNOWN]"
 static void PrintFlag(const char* json, const char* field) {
-  const char* status = "[UNKNOWN]";
-  if      (IsTrue (json, field)) status = "[ON]";
-  else if (IsFalse(json, field)) status = "[OFF]";
-  else if (IsNull (json, field)) status = "[UNSET]";
+  Error err;
+  const char* status;
+
+  if      (IsTrue (json, field, &err)) status = "[ON]";
+  else if (IsFalse(json, field, &err)) status = "[OFF]";
+  else if (IsNull (json, field, &err)) status = "[UNSET]";
+  else status = "[UNKNOWN]";
 
   std::cout << "  " << field << ": " << status << std::endl;
 }
@@ -34,6 +37,7 @@ int main() {
   // Demonstrate graceful handling of a missing key
   PrintFlag(json_data, "nonexistent_flag");
 
+  delete[] json_data;
   return EXIT_SUCCESS;
 }
 

@@ -11,9 +11,19 @@ int main() {
     "dependencies": 0
   })";
 
+  ascijson::Error err;
+
   // Using out linear-scan field counter
-  unsigned int project_fields = ascijson::CountFields(json, "project");
-  unsigned int version_fields = ascijson::CountFields(json, "version");
+  unsigned int project_fields = ascijson::CountFields(json, "project", &err);
+  if (err != ascijson::Error::kNone) {
+    std::cout << "Your JSON is invalid" << std::endl;
+    return EXIT_FAILURE;
+  }
+  unsigned int version_fields = ascijson::CountFields(json, "version", &err);
+  if (err != ascijson::Error::kNone) {
+    std::cout << "Your JSON is invalid" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   std::cout << "--- ascijson Basic Example ---" << std::endl;
   std::cout << "Project field found: " << (project_fields > 0 ? "Yes" : "No")
