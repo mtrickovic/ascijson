@@ -6,6 +6,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Generate compile_commands.json for clangd
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Compiler flags for high quality (Google Style encouragement)
 if (MSVC)
   add_compile_options(/W4 /WX)
@@ -63,7 +66,7 @@ target_link_libraries(basic_boolnull PRIVATE ascijson)
 # Copy quotes.json next to the executable after build
 add_custom_command(TARGET quotes_display POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy
-    ${CMAKE_SOURCE_DIR}/examples/quotes_display/quotes.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/examples/quotes_display/quotes.json
     $<TARGET_FILE_DIR:quotes_display>/quotes.json
   COMMENT "Copying quotes.json to build dir"
 )
@@ -71,7 +74,7 @@ add_custom_command(TARGET quotes_display POST_BUILD
 # Copy portfolio.json next to the executable after build
 add_custom_command(TARGET basic_numerics POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy
-    ${CMAKE_SOURCE_DIR}/examples/basic_numerics/portfolio.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/examples/basic_numerics/portfolio.json
     $<TARGET_FILE_DIR:basic_numerics>/portfolio.json
   COMMENT "Copying portfolio.json to build dir"
 )
@@ -79,7 +82,7 @@ add_custom_command(TARGET basic_numerics POST_BUILD
 # Copy flags.json next to the executable after build
 add_custom_command(TARGET basic_boolnull POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy
-    ${CMAKE_SOURCE_DIR}/examples/basic_boolnull/flags.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/examples/basic_boolnull/flags.json
     $<TARGET_FILE_DIR:basic_boolnull>/flags.json
   COMMENT "Copying flags.json to build dir"
 )
