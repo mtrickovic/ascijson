@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(ascijson VERSION 0.2.1 LANGUAGES CXX)
+project(ascijson VERSION 0.3.0 LANGUAGES CXX)
 
 # Standard C++17 compliance
 set(CMAKE_CXX_STANDARD 17)
@@ -21,6 +21,7 @@ endif()
 # Later, this can be transitioned to an Interface library if you go header-only.
 add_library(ascijson
   src/tokenizer.cpp
+  src/json_writer.cpp
 )
 
 # Define public headers directory
