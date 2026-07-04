@@ -39,7 +39,7 @@ const char* SkipString(const char* cursor, Error* out_error) {
     SetError(out_error, Error::kInvalidJson);
     return nullptr;
   }
-  cursor++; // Move past opening '"'
+  cursor++;  // Move past opening '"'
   while (*cursor != '\0' && *cursor != '"') {
     if (*cursor == '\\') {
       cursor++;
@@ -64,7 +64,7 @@ const char* SkipString(const char* cursor, Error* out_error) {
     SetError(out_error, Error::kInvalidJson);
     return nullptr;
   }
-  return cursor + 1; // Return character immediately following closing '"'
+  return cursor + 1;  // Return character immediately following closing '"'
 }
 
 // Moves the cursor past the current JSON value (string, object, array, or
@@ -92,8 +92,10 @@ const char* SkipValue(const char* cursor, Error* out_error) {
         cursor = SkipString(cursor, out_error);
         continue;
       }
-      if (*cursor == open) depth++;
-      else if (*cursor == close) depth--;
+      if (*cursor == open)
+        depth++;
+      else if (*cursor == close)
+        depth--;
 
       if (depth > 0) {
         cursor++;
@@ -104,7 +106,7 @@ const char* SkipValue(const char* cursor, Error* out_error) {
       SetError(out_error, Error::kInvalidJson);
       return nullptr;
     }
-    return cursor + 1; // Step past the closing structure token
+    return cursor + 1;  // Step past the closing structure token
   }
 
   // Primitive parsing loop (number, true, false, null)
@@ -133,15 +135,31 @@ void CopyString(const char* source, char* dest, size_t dest_size) {
     if (source[i] == '\\') {
       i++;
       if (source[i] == '\0') break;
-      switch(source[i]) {
-        case '"':  dest[o++] = '"';  break;
-        case '\\': dest[o++] = '\\'; break;
-        case '/':  dest[o++] = '/';  break;
-        case 'b':  dest[o++] = '\b'; break;
-        case 'f':  dest[o++] = '\f'; break;
-        case 'n':  dest[o++] = '\n'; break;
-        case 'r':  dest[o++] = '\r'; break;
-        case 't':  dest[o++] = '\t'; break;
+      switch (source[i]) {
+        case '"':
+          dest[o++] = '"';
+          break;
+        case '\\':
+          dest[o++] = '\\';
+          break;
+        case '/':
+          dest[o++] = '/';
+          break;
+        case 'b':
+          dest[o++] = '\b';
+          break;
+        case 'f':
+          dest[o++] = '\f';
+          break;
+        case 'n':
+          dest[o++] = '\n';
+          break;
+        case 'r':
+          dest[o++] = '\r';
+          break;
+        case 't':
+          dest[o++] = '\t';
+          break;
         case 'u':
           // No unicode support — skip 4 hex digits, wirte '?' placeholder
           for (int j = 0; j < 4 && source[i + 1] != '\0'; ++j) i++;
@@ -169,11 +187,9 @@ bool IsLiteral(const char* cursor, const char* literal, size_t len) {
   }
   // Guard against prefix matches: next char must be a value terminator.
   char next = cursor[len];
-  return (next == ','  || next == '}' || next == ']' ||
-          next == ' '  || next == '\n' || next == '\r' ||
-          next == '\t' || next == '\0');
+  return (next == ',' || next == '}' || next == ']' || next == ' ' ||
+          next == '\n' || next == '\r' || next == '\t' || next == '\0');
 }
-
 
 }  // namespace
 
@@ -194,7 +210,7 @@ unsigned int CountArrayElements(const char* json, Error* out_error) {
   unsigned int count = 1;
   while (cursor && *cursor != '\0' && *cursor != ']') {
     cursor = SkipValue(cursor, out_error);
-    if (!cursor) return 0; // Propagate tracking error
+    if (!cursor) return 0;  // Propagate tracking error
     cursor = SkipWhitespace(cursor);
     if (*cursor == ',') {
       count++;
@@ -280,9 +296,8 @@ const char* FindValue(const char* json, const char* key, Error* out_error) {
   return nullptr;
 }
 
-unsigned int CountFields(const char* json,
-                         const char* field_name,
-                         Error *out_error) {
+unsigned int CountFields(const char* json, const char* field_name,
+                         Error* out_error) {
   SetError(out_error, Error::kNone);
   if (!json || !field_name) return 0;
 
@@ -325,12 +340,8 @@ unsigned int CountFields(const char* json,
   return count;
 }
 
-bool GetNthString(const char* json,
-                  const char* field_name,
-                  unsigned int n,
-                  char* out_buffer,
-                  size_t buffer_size,
-                  Error* out_error) {
+bool GetNthString(const char* json, const char* field_name, unsigned int n,
+                  char* out_buffer, size_t buffer_size, Error* out_error) {
   SetError(out_error, Error::kInvalidJson);
   if (!json || !out_buffer || buffer_size == 0) {
     SetError(out_error, Error::kMemoryError);
@@ -404,11 +415,8 @@ bool GetNthString(const char* json,
   return false;
 }
 
-bool GetNthInt(const char* json,
-               const char* field_name,
-               unsigned int index,
-               int* out_value,
-               Error* out_error) {
+bool GetNthInt(const char* json, const char* field_name, unsigned int index,
+               int* out_value, Error* out_error) {
   const char* val_ptr = FindValue(json, field_name, out_error);
   if (!val_ptr) return false;
 
@@ -444,11 +452,8 @@ bool GetNthInt(const char* json,
   return false;
 }
 
-bool GetNthDouble(const char* json,
-                  const char* field_name,
-                  unsigned int index,
-                  double* out_value,
-                  Error* out_error) {
+bool GetNthDouble(const char* json, const char* field_name, unsigned int index,
+                  double* out_value, Error* out_error) {
   const char* val_ptr = FindValue(json, field_name, out_error);
   if (!val_ptr) return false;
 
@@ -512,6 +517,5 @@ bool IsNull(const char* json, const char* field_name, Error* out_error) {
   if (!val) return false;
   return IsLiteral(val, "null", 4);
 }
-
 
 }  // namespace ascijson

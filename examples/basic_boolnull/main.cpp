@@ -1,4 +1,5 @@
 #include <iostream>
+
 #include "../../include/json.hpp"
 
 using namespace ascijson;
@@ -14,10 +15,14 @@ static void PrintFlag(const char* json, const char* field) {
   Error err;
   const char* status;
 
-  if      (IsTrue (json, field, &err)) status = "[ON]";
-  else if (IsFalse(json, field, &err)) status = "[OFF]";
-  else if (IsNull (json, field, &err)) status = "[UNSET]";
-  else status = "[UNKNOWN]";
+  if (IsTrue(json, field, &err))
+    status = "[ON]";
+  else if (IsFalse(json, field, &err))
+    status = "[OFF]";
+  else if (IsNull(json, field, &err))
+    status = "[UNSET]";
+  else
+    status = "[UNKNOWN]";
 
   std::cout << "  " << field << ": " << status << std::endl;
 }
@@ -41,8 +46,7 @@ int main() {
   return EXIT_SUCCESS;
 }
 
-char* LoadFile(const char* path)
-{
+char* LoadFile(const char* path) {
   FILE* f = nullptr;
 #ifdef _MSC_VER
   fopen_s(&f, path, "rb");
@@ -53,13 +57,18 @@ char* LoadFile(const char* path)
 
   fseek(f, 0, SEEK_END);
   long size = ftell(f);
-  if (size < 0) { fclose(f); return nullptr; }
+  if (size < 0) {
+    fclose(f);
+    return nullptr;
+  }
   fseek(f, 0, SEEK_SET);
 
   char* json_data = new char[size + 1];
   if ((long)fread(json_data, 1, size, f) != size) {
     fprintf(stderr, "Error: Could not read file completely\n");
-    fclose(f); delete[] json_data; return nullptr;
+    fclose(f);
+    delete[] json_data;
+    return nullptr;
   }
   fclose(f);
   json_data[size] = '\0';

@@ -89,33 +89,29 @@ int main() {
 
   // Escape sequence handling
   const char* escapes =
-    R"({"a":"hello\nworld","b":"tab\there","c":"back\\slash",)"
-    R"("d":"quote\"end","e":"caf\u00e9"})";
+      R"({"a":"hello\nworld","b":"tab\there","c":"back\\slash",)"
+      R"("d":"quote\"end","e":"caf\u00e9"})";
 
   memset(buf, 0, sizeof(buf));
-  Assert("ESC: newline",
-         GetNthString(escapes, "a", 0, buf, sizeof(buf)) &&
-         strcmp(buf, "hello\nworld") == 0);
+  Assert("ESC: newline", GetNthString(escapes, "a", 0, buf, sizeof(buf)) &&
+                             strcmp(buf, "hello\nworld") == 0);
 
   memset(buf, 0, sizeof(buf));
-  Assert("ESC: tab",
-         GetNthString(escapes, "b", 0, buf, sizeof(buf)) &&
-         strcmp(buf, "tab\there") == 0);
+  Assert("ESC: tab", GetNthString(escapes, "b", 0, buf, sizeof(buf)) &&
+                         strcmp(buf, "tab\there") == 0);
 
   memset(buf, 0, sizeof(buf));
-  Assert("ESC: backslash",
-         GetNthString(escapes, "c", 0, buf, sizeof(buf)) &&
-         strcmp(buf, "back\\slash") == 0);
+  Assert("ESC: backslash", GetNthString(escapes, "c", 0, buf, sizeof(buf)) &&
+                               strcmp(buf, "back\\slash") == 0);
 
   memset(buf, 0, sizeof(buf));
-  Assert("ESC: quote",
-         GetNthString(escapes, "d", 0, buf, sizeof(buf)) &&
-         strcmp(buf, "quote\"end") == 0);
+  Assert("ESC: quote", GetNthString(escapes, "d", 0, buf, sizeof(buf)) &&
+                           strcmp(buf, "quote\"end") == 0);
 
   memset(buf, 0, sizeof(buf));
   Assert("ESC: unicode placeholder",
          GetNthString(escapes, "e", 0, buf, sizeof(buf)) &&
-         strcmp(buf, "caf?") == 0);
+             strcmp(buf, "caf?") == 0);
 
   // -------------------------------------------------------
   // FindValue
@@ -204,7 +200,7 @@ int main() {
 
   // Test Double Parsing
   Assert("Double Precision (PI)", GetNthDouble(json, "pi", 0, &d_val) &&
-         (d_val > 3.1415 && d_val < 3.1416));
+                                      (d_val > 3.1415 && d_val < 3.1416));
   Assert("Leading Zero Double",
          GetNthDouble(json, "zero_point", 0, &d_val) && d_val == 0.5);
 
@@ -223,62 +219,62 @@ int main() {
   })";
 
   // Affirmative cases
-  Assert("IT: basic true",         IsTrue(flags, "active"));
+  Assert("IT: basic true", IsTrue(flags, "active"));
 
   // Negative cases - wrong literal
-  Assert("IT: false is not true",  !IsTrue(flags, "disabled"));
-  Assert("IT: null is not true",   !IsTrue(flags, "unset"));
+  Assert("IT: false is not true", !IsTrue(flags, "disabled"));
+  Assert("IT: null is not true", !IsTrue(flags, "unset"));
 
   // Must not match numeric 1 or string "true"
-  Assert("IT: int is not true",    !IsTrue(flags, "count"));
+  Assert("IT: int is not true", !IsTrue(flags, "count"));
   Assert("IT: string is not true", !IsTrue(flags, "label"));
 
   // Prefix guard - "truecolor" must not match "true"
-  Assert("IT: prefix guard",       !IsTrue(flags, "truthy_ish"));
+  Assert("IT: prefix guard", !IsTrue(flags, "truthy_ish"));
 
   // Safety
-  Assert("IT: null json",          !IsTrue(nullptr, "active"));
-  Assert("IT: null key",           !IsTrue(flags, nullptr));
-  Assert("IT: missing key",        !IsTrue(flags, "ghost"));
+  Assert("IT: null json", !IsTrue(nullptr, "active"));
+  Assert("IT: null key", !IsTrue(flags, nullptr));
+  Assert("IT: missing key", !IsTrue(flags, "ghost"));
 
   // -------------------------------------------------------
   std::cout << "\n-- IsFalse --\n";
 
-  Assert("IF: basic false",        IsFalse(flags, "disabled"));
+  Assert("IF: basic false", IsFalse(flags, "disabled"));
 
-  Assert("IF: true is not false",  !IsFalse(flags, "active"));
-  Assert("IF: null is not false",  !IsFalse(flags, "unset"));
-  Assert("IF: int is not false",   !IsFalse(flags, "count"));
-  Assert("IF: string is not false",!IsFalse(flags, "label"));
+  Assert("IF: true is not false", !IsFalse(flags, "active"));
+  Assert("IF: null is not false", !IsFalse(flags, "unset"));
+  Assert("IF: int is not false", !IsFalse(flags, "count"));
+  Assert("IF: string is not false", !IsFalse(flags, "label"));
 
-  Assert("IF: null json",          !IsFalse(nullptr, "disabled"));
-  Assert("IF: null key",           !IsFalse(flags, nullptr));
-  Assert("IF: missing key",        !IsFalse(flags, "ghost"));
+  Assert("IF: null json", !IsFalse(nullptr, "disabled"));
+  Assert("IF: null key", !IsFalse(flags, nullptr));
+  Assert("IF: missing key", !IsFalse(flags, "ghost"));
 
   // -------------------------------------------------------
   std::cout << "\n-- IsNull --\n";
 
-  Assert("IN: basic null",         IsNull(flags, "unset"));
+  Assert("IN: basic null", IsNull(flags, "unset"));
 
-  Assert("IN: true is not null",   !IsNull(flags, "active"));
-  Assert("IN: false is not null",  !IsNull(flags, "disabled"));
-  Assert("IN: int is not null",    !IsNull(flags, "count"));
+  Assert("IN: true is not null", !IsNull(flags, "active"));
+  Assert("IN: false is not null", !IsNull(flags, "disabled"));
+  Assert("IN: int is not null", !IsNull(flags, "count"));
   Assert("IN: string is not null", !IsNull(flags, "label"));
 
-  Assert("IN: null json",          !IsNull(nullptr, "unset"));
-  Assert("IN: null key",           !IsNull(flags, nullptr));
-  Assert("IN: missing key",        !IsNull(flags, "ghost"));
+  Assert("IN: null json", !IsNull(nullptr, "unset"));
+  Assert("IN: null key", !IsNull(flags, nullptr));
+  Assert("IN: missing key", !IsNull(flags, "ghost"));
 
   // Multiple nulls in same object - verify FindValue finds the right one
   const char* multi_null = R"({"a": null, "b": true, "c": null})";
   Assert("IN: first of two nulls", IsNull(multi_null, "a"));
-  Assert("IN: second of two nulls",IsNull(multi_null, "c"));
-  Assert("IN: non-null between",   !IsNull(multi_null, "b"));
+  Assert("IN: second of two nulls", IsNull(multi_null, "c"));
+  Assert("IN: non-null between", !IsNull(multi_null, "b"));
 
   // Nested isolation - should not descend into child objects
   const char* nested_flag = R"({"outer": false, "child": {"outer": true}})";
-  Assert("IN: nested isolation IT", !IsTrue (nested_flag, "outer"));
-  Assert("IN: nested isolation IF",  IsFalse(nested_flag, "outer"));
+  Assert("IN: nested isolation IT", !IsTrue(nested_flag, "outer"));
+  Assert("IN: nested isolation IF", IsFalse(nested_flag, "outer"));
 
   // -------------------------------------------------------
   Summary();

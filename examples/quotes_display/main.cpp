@@ -1,7 +1,8 @@
-#include <iostream>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <iostream>
+
 #include "../../include/json.hpp"
 
 using namespace ascijson;
@@ -37,8 +38,8 @@ int main() {
   // Step 3: get a pointer to the Nth { "text":..., "author":... } object
   const char* entry = GetNthElement(quotes_array, random_idx, &err);
   if (!entry) {
-    std::cerr << "Error: could not retrieve quote at index "
-              << random_idx << std::endl;
+    std::cerr << "Error: could not retrieve quote at index " << random_idx
+              << std::endl;
     delete[] json_data;
     return EXIT_FAILURE;
   }
@@ -48,7 +49,7 @@ int main() {
   char quote[256] = {};
   char author[128] = {};
 
-  if (!GetNthString(entry, "text",   0, quote,  sizeof(quote), &err) ||
+  if (!GetNthString(entry, "text", 0, quote, sizeof(quote), &err) ||
       !GetNthString(entry, "author", 0, author, sizeof(author), &err)) {
     std::cerr << "Error: could not read quote fields" << std::endl;
     delete[] json_data;
@@ -62,8 +63,7 @@ int main() {
   return EXIT_SUCCESS;
 }
 
-char* LoadFile(const char* path)
-{
+char* LoadFile(const char* path) {
   FILE* f = nullptr;
 #ifdef _MSC_VER
   fopen_s(&f, path, "rb");
@@ -74,13 +74,18 @@ char* LoadFile(const char* path)
 
   fseek(f, 0, SEEK_END);
   long size = ftell(f);
-  if (size < 0) { fclose(f); return nullptr; }
+  if (size < 0) {
+    fclose(f);
+    return nullptr;
+  }
   fseek(f, 0, SEEK_SET);
 
   char* json_data = new char[size + 1];
   if ((long)fread(json_data, 1, size, f) != size) {
     fprintf(stderr, "Error: Could not read file completely\n");
-    fclose(f); delete[] json_data; return nullptr;
+    fclose(f);
+    delete[] json_data;
+    return nullptr;
   }
   fclose(f);
   json_data[size] = '\0';
