@@ -68,6 +68,8 @@ add_executable(basic_numerics examples/basic_numerics/main.cpp)
 target_link_libraries(basic_numerics PRIVATE ascijson)
 add_executable(basic_boolnull examples/basic_boolnull/main.cpp)
 target_link_libraries(basic_boolnull PRIVATE ascijson)
+add_executable(partlist examples/partlist.cpp)
+target_link_libraries(partlist PRIVATE ascijson)
 
 # Copy quotes.json next to the executable after build
 add_custom_command(TARGET quotes_display POST_BUILD
