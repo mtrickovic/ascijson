@@ -39,6 +39,11 @@ if (BUILD_TESTING)
   target_link_libraries(tokenizer_test PRIVATE ascijson)
 
   add_test(NAME TokenizerTests COMMAND tokenizer_test)
+
+  add_executable(writer_test tests/writer_test.cpp)
+  target_link_libraries(writer_test PRIVATE ascijson)
+
+  add_test(NAME WriterTests COMMAND writer_test)
 endif()
 
 # 3. Fuzzing (Disabled by default)

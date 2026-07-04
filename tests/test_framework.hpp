@@ -19,6 +19,15 @@ inline void Assert(const char* name, bool condition) {
   }
 }
 
+inline FILE* OpenFile(const char* path, const char* mode) {
+#ifdef _MSC_VER
+  FILE* fp = nullptr;
+  return fopen_s(&fp, path, mode) == 0 ? fp : nullptr;
+#else
+  return fopen(path, mode);
+#endif
+}
+
 inline void Summary() {
   std::cout << "\n--- Test Summary ---" << std::endl;
   std::cout << "Passed: " << g_pass_count << std::endl;
