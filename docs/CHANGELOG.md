@@ -9,13 +9,43 @@ and this project adheres to [Semantic Versioning][semver-link].
 ## [Unreleased]
 
 ### Planned
-- `GetNthInt` and `GetNthDouble` — numeric extraction via manual conversion
-  (no `std::stoi`)
-- Boolean and null literal detection (`true`, `false`, `null`)
-- Fuzz testing against malformed JSON inputs
-- Zero-STL serializer — generate JSON directly into pre-allocated raw buffers
 - SIMD optimization for whitespace and quote scanning
 - Hardware target demo for memory-constrained / embedded environments
+
+---
+
+## [0.3.0] - 2026-07-06
+
+### Added
+- **Zero-STL Writer**: New `Writer` struct and free-function API
+  (`InitWriter`, `BeginObject`/`EndObject`, `BeginArray`/`EndArray`,
+  `WriteKey`, `WriteString`, `WriteInt`, `WriteDouble`, `WriteBool`,
+  `WriteNull`) for serializing JSON into a caller-provided, fixed-size
+  buffer. Zero heap allocation, zero exceptions, matching the existing
+  reader's philosophy.
+- `WriteWriterToFile` — writes a completed `Writer`'s buffer to disk in
+  binary mode (no CRLF translation), keeping output byte-identical
+  across Windows and Linux.
+- Locale-safe double formatting: `WriteDouble` always emits `.` as the
+  decimal separator regardless of the active C locale, with configurable
+  precision and automatic trailing-zero trimming.
+- String escaping for control characters, quotes, and backslashes in
+  `WriteString`.
+- New error codes: `kBufferOverflow` (buffer or max nesting depth
+  exceeded), `kInvalidState` (e.g. mismatched `EndObject`/`EndArray`).
+- **Test Suite** (`tests/writer_test.cpp`): exact-string assertions for
+  objects, arrays, nesting, escaping, double formatting/trimming, buffer
+  overflow, invalid state transitions, and file round-trip — using the
+  existing `ascijson::test::Assert`/`Summary` framework.
+- **Example App** (`examples/partlist.cpp`): builds an in-memory list of
+  records and writes them out as a JSON array.
+
+### Known Limitations
+- Fixed maximum nesting depth (`kMaxWriterDepth = 32`); deeper structures
+  require increasing this compile-time constant.
+- Output must fit entirely within the caller-provided buffer before
+  writing to disk — no incremental/streaming write to an open `FILE*`.
+- No pretty-printing; output is always compact (no indentation).
 
 ---
 
@@ -65,7 +95,8 @@ and this project adheres to [Semantic Versioning][semver-link].
 
 ---
 
-[Unreleased]: https://github.com/mtrickovic/ascijson/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/mtrickovic/ascijson/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/mtrickovic/ascijson/compare/v0.2.1...v0.3.0
 [0.1.0]: https://github.com/mtrickovic/ascijson/releases/tag/v0.1.0
 
 [keepachangelog-link]:     https://keepachangelog.com/en/1.0.0/
